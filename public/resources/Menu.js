@@ -42,7 +42,7 @@ class Menu{
             ev.preventDefault();
             let resp = await modal.yesno(`¿Confirma <b>cerrar sesión</b>?`);
             if(!resp) return;
-            window.location.href = "/usuarios/logout";
+            window.location.href = "/inicio/cerrar-sesion";
         })
     }
     abrirEnNuevaVentana(url){
@@ -60,21 +60,20 @@ class Menu{
     }
     hideCortina(){
         $("body, .content-wrapper").scrollTop(0);
-
-        $("#cortina").animate({
-            opacity: 0
-        },"fast", ()=>{
-            $("body, .content-wrapper").removeClass("overflow-hidden");
-            $(".wrapper").removeClass("d-none");
-            $("#cortina").remove();
-            $(".content-wrapper>.content").removeClass("d-none");
-            $(".content-wrapper>.content").animate({
-                opacity: 1
-            }, "fast")
-
-            //verifico el modo dinamico una vez mas
-            this.setTheadDynamic();
-        })
+        const cortina = $("#cortina");
+        return new Promise(resolve=>{
+            if(!cortina.length) return resolve();
+            cortina.animate({opacity: 0}, "fast", ()=>{
+                $("body, .content-wrapper").removeClass("overflow-hidden");
+                $(".wrapper").removeClass("d-none");
+                cortina.remove();
+                const contenido = $(".content-wrapper>.content").removeClass("d-none");
+                contenido.animate({opacity: 1}, "fast");
+                // Verifica el modo dinámico antes de terminar la transición.
+                this.setTheadDynamic();
+                contenido.promise().done(resolve);
+            });
+        });
     }
     showLeftMenu(show=null){
         let isOpen = $("body").hasClass("sidebar-collapse");
@@ -428,5 +427,9 @@ class Menu{
             if(hideon && hideon.length > 0 && hideon.includes(primordial.emprendimiento.tipo) == true) $(ele).addClass("d-none");
             if(showon && showon.length > 0 && showon.includes(primordial.emprendimiento.tipo) == true) $(ele).removeClass("d-none");
         });
+    }
+    abrirVentana(url){
+        if(window?.electronAPI?.isElectron) $.get("/control/abrir-ventana?" + encodeURIComponent(url));
+        else window.open(url, "_blank");
     }
 }

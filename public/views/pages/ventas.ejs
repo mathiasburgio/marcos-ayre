@@ -1,0 +1,29 @@
+<%- include('../layouts/encabezado'); %>
+    <% if(!evento){ %>
+        <p class="alert alert-info">Todavía no hay eventos. Creá un evento para registrar ventas y mesas.</p>
+    <% }else{ %>
+        <p class="text-muted">Evento activo: <strong><%= evento.nombre %></strong></p>
+        <section class="card mb-4"><div class="card-body table-responsive">
+            <h2 class="h5">Mesas</h2>
+            <form id="form-mesa" class="form-row mb-3">
+                <div class="col-md-3 mb-2"><label for="mesa-numero">Número</label><input class="form-control" id="mesa-numero" name="numero" maxlength="50" required></div>
+                <div class="col-md-4 mb-2"><label for="mesa-nombre">Nombre</label><input class="form-control" id="mesa-nombre" name="nombre" maxlength="200" required></div>
+                <div class="col-md-3 mb-2"><label for="mesa-telefono">Teléfono (opcional)</label><input class="form-control" id="mesa-telefono" name="telefono" maxlength="50"></div>
+                <div class="col-md-2 d-flex align-items-end mb-2"><button class="btn btn-primary" type="submit">Crear mesa</button></div>
+            </form>
+            <table class="table"><thead><tr><th>Número</th><th>Nombre</th><th>Total</th><th>Efectivo</th><th>Transferencia</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>
+                <% for(const mesa of mesas){ %>
+                    <tr><td><%= mesa.numero %></td><td><%= mesa.nombre %></td><td><%= mesa.total.toFixed(2) %></td><td><%= mesa.efectivo.toFixed(2) %></td><td><%= mesa.transferencia.toFixed(2) %></td><td><%= (mesa.total - mesa.efectivo - mesa.transferencia).toFixed(2) %></td><td><%= mesa.cobrado ? 'Cobrada' : 'Pendiente' %></td><td><% if(!mesa.cobrado && mesa.total > 0){ %><button type="button" class="btn btn-sm btn-outline-primary" data-cobrar="<%= mesa.id %>">Cobrar</button><% } %></td></tr>
+                <% } %>
+                <% if(!mesas.length){ %><tr><td colspan="8" class="text-muted">No hay mesas</td></tr><% } %>
+            </tbody></table>
+        </div></section>
+        <section class="card"><div class="card-body table-responsive">
+            <h2 class="h5">Últimas ventas</h2>
+            <table class="table"><thead><tr><th>Número</th><th>Fecha</th><th>Usuario</th><th>Mesa</th><th>Total</th><th>Estado</th></tr></thead><tbody>
+                <% for(const venta of ventas){ %><tr><td><%= venta.numeroEvento %></td><td><%= venta.fecha %></td><td><%= venta.usuarioEmail %></td><td><%= venta.mesaId || 'Directa' %></td><td><%= venta.total.toFixed(2) %></td><td><%= venta.cobrado ? 'Cobrada' : 'Pendiente' %></td></tr><% } %>
+                <% if(!ventas.length){ %><tr><td colspan="6" class="text-muted">No hay ventas</td></tr><% } %>
+            </tbody></table>
+        </div></section>
+    <% } %>
+<%- include('../layouts/pie', {script: 'ventas'}); %>

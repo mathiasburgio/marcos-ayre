@@ -45,7 +45,11 @@ class Modal{
         this.element.on('hidden.bs.modal', (e)=>{
             if(this.onHidden) this.onHidden();
             if(this.cbHide) this.cbHide();
-            if(this.promiseUntilClose) this.promiseUntilClose();//es una promesa de modal.hide()
+            if(this.promiseUntilClose){
+                const resolver = this.promiseUntilClose;
+                this.promiseUntilClose = null;
+                resolver(); // Es la promesa de modal.hide().
+            }
         });
     }
     message(text){

@@ -1,0 +1,77 @@
+<div id="movimientos-caja" class="card shadow-sm mx-auto" style="max-width: 1100px;" data-evento-en-curso="<%= eventoEnCurso %>">
+    <div class="card-body">
+        <button type="button" class="btn btn-success btn-flat mb-3" id="agregar-movimiento" <%= eventoEnCurso ? '' : 'disabled' %>><i class="fas fa-plus"></i> Agregar movimiento</button>
+        <p class="alert alert-info <%= eventoEnCurso ? 'd-none' : '' %>" id="aviso-evento-movimientos">Para registrar ingresos o egresos debe haber un evento iniciado y sin finalizar.</p>
+        <form id="filtros-movimientos" class="form-row align-items-end mb-3">
+            <div class="form-group col-12 col-md-3 mb-2">
+                <label for="busqueda-movimientos">Buscar por</label>
+                <select id="busqueda-movimientos" class="form-control">
+                    <option value="evento">Evento</option>
+                    <option value="fecha">Fecha</option>
+                </select>
+            </div>
+            <div class="form-group col-12 col-md-6 mb-2" id="filtro-evento-movimientos">
+                <label for="evento-movimientos">Evento</label>
+                <select id="evento-movimientos" class="form-control">
+                    <% for(const evento of eventos){ %>
+                        <option value="<%= evento.id %>"><%= evento.nombre %></option>
+                    <% } %>
+                    <% if(!eventos.length){ %><option value="">No hay eventos</option><% } %>
+                </select>
+            </div>
+            <div class="form-group col-12 col-md-6 mb-2 d-none" id="filtro-fecha-movimientos">
+                <label for="fecha-movimientos">Desde la fecha</label>
+                <input type="date" id="fecha-movimientos" class="form-control" disabled required>
+            </div>
+            <div class="col-12 col-md-3 mb-2">
+                <button type="submit" class="btn btn-primary btn-flat btn-block">Buscar</button>
+            </div>
+        </form>
+        <p class="text-muted d-none mb-3" id="limite-movimientos"><small>La búsqueda por fecha muestra hasta 1000 movimientos.</small></p>
+        <div class="table-responsive table-scroll">
+            <table class="table table-sm mb-0" id="listado-movimientos">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Nº global</th>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Detalle</th>
+                        <th class="text-right">Efectivo</th>
+                        <th class="text-right">Transferencia</th>
+                        <th>Usuario</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div id="modales" class="d-none">
+    <div id="modal-movimiento-caja">
+        <form id="form-movimiento-caja">
+            <p class="text-muted">Evento: <strong><%= eventos[0]?.nombre || '' %></strong></p>
+            <div class="form-group">
+                <label for="movimiento-tipo">Tipo</label>
+                <select id="movimiento-tipo" class="form-control" required>
+                    <option value="ingreso">Ingreso</option>
+                    <option value="egreso">Egreso</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="movimiento-detalle">Detalle</label>
+                <textarea id="movimiento-detalle" class="form-control" rows="2" maxlength="500" required></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-12 col-sm-6">
+                    <label for="movimiento-efectivo">Efectivo</label>
+                    <input type="number" id="movimiento-efectivo" class="form-control" min="0" step="0.01" value="0" required>
+                </div>
+                <div class="form-group col-12 col-sm-6">
+                    <label for="movimiento-transferencia">Transferencia</label>
+                    <input type="number" id="movimiento-transferencia" class="form-control" min="0" step="0.01" value="0" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-flat btn-block">Guardar</button>
+        </form>
+    </div>
+</div>

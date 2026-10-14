@@ -1,0 +1,45 @@
+<script src="/resources/cdn/jquery-3.7.1.min.js"></script>
+<script src="/resources/cdn/bootstrap/js/popper.min.js"></script>
+
+<script src="/resources/cdn/adminlte/js/adminlte.min.js"></script>
+<script src="/resources/cdn/bootstrap/js/bootstrap.min.js"></script>
+<script src="/resources/cdn/sweetalert2/sweetalert2.all.min.js"></script>
+
+<script src="/resources/cdn/FileSaver.js"></script>
+<script src="/resources/cdn/exceljs.min.js"></script>
+<script src="/resources/cdn/JsBarcode.all.min.js"></script>
+<script src="/resources/cdn/qrcode.min.js"></script>
+<script src="/resources/imask.min.js"></script>
+
+<script src="/resources/Modal2.js"></script>
+<script src="/resources/Utils.js"></script>
+<script src="/resources/DropdownSearcher.js"></script>
+<script src="/resources/NumberFormatter.js"></script>
+<script src="/resources/Menu.js"></script>
+<script src="/resources/SuperExcel.js"></script>
+<script src="/resources/Impresor.js"></script>
+<script src="/resources/job-printer-front.js"></script>
+<script src="/resources/Imagine.js"></script>
+<script src="/resources/SimpleCRUD.js"></script>
+<script src="/resources/TableSelector.js"></script>
+
+<script>
+
+    //si pasan 5 segundos y no anda, que permita recargar
+    setTimeout(()=>{
+        if($("#cortina").attr("data-espera-login") === "true") return;
+        $("#cortina .d-none").removeClass("d-none");
+        $("#cortina #label-cargando").html("Esto esta tardando mas de la cuenta...");
+    },5_000);
+
+    var fechas, modal, utils, numberFormatter, menu, superExcel, impresor, primordial;
+    var localDB = null;
+    async function boilerplate(loadPrimordial=true){
+        modal = new Modal();
+        utils = new Utils();
+        numberFormatter = new NumberFormatter();
+        menu = new Menu();
+
+        if(modal?.setAnimation && menu.animations != null) modal.setAnimation(menu.animations);
+    }
+</script>

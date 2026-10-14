@@ -1,0 +1,235 @@
+.card-title{
+    margin-bottom: 0; /*sobre escribe el margen de bootstrap */
+}
+.flat{
+    border-radius: 0;
+}
+.btn-flat{
+    border-radius: 0;
+}
+.cp{
+    cursor: pointer;
+}
+.table-uppercase table{
+    text-transform: uppercase;
+}
+.no-select {
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+}
+table{
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+}
+.titulo{
+    font-size: 1.2rem;
+    color: #333;
+    border-bottom: solid 2px var(--mateflix);
+    margin-bottom: 1.25rem;
+}
+.dark-mode .titulo{
+    color: #eee;
+}
+#cortina{
+    position: absolute; 
+    top:0; 
+    width:100vw; 
+    height: 100vh; 
+    overflow: hidden; 
+    background: var(--mateflix); 
+    opacity: 0.97;
+    z-index: 99999; 
+    display: grid;
+    align-items: center;
+    justify-content: center;
+}
+.scroll-40vh{
+    max-height: 40vh;
+    overflow-y: scroll;
+}
+.scroll-50vh{
+    max-height: 50vh;
+    overflow-y: scroll;
+}
+.scroll-60vh{
+    max-height: 60vh;
+    overflow-y: scroll;
+}
+.scroll-70vh{
+    max-height: 70vh;
+    overflow-y: scroll;
+}
+.scroll-80vh{
+    max-height: 80vh;
+    overflow-y: scroll;
+}
+.dark-mode .table-info, .dark-mode .table-info td, .dark-mode .table-info th{
+    background-color: #3f51b5b4 !important;
+}
+.dark-mode .table-warning, .dark-mode .table-warning td, .dark-mode .table-warning th{
+    background-color: #ff990092 !important;
+}
+.dark-mode .table-danger, .dark-mode .table-danger td, .dark-mode .table-danger th{
+    background-color: #f4433663 !important;
+}
+.dark-mode .table-success, .dark-mode .table-success td, .dark-mode .table-success th{
+    background-color: #4caf4f93 !important;
+}
+.bg-mateflix{
+    background-color: var(--mateflix) !important;
+}
+:root {
+    --mateflix: #2d73b5;
+    --facebook: #3b5998;
+    --whatsapp: #59ce72;
+}
+.bg-transparent{
+    background-color: transparent;
+}
+.bg-eee{
+    background-color: #eee !important;
+}
+.bg-ddd{
+    background-color: #ddd !important;
+}
+.bg-eee2{
+    background-color: #eee !important;
+    color: black !important;
+}
+.bg-ddd2{
+    background-color: #ddd !important;
+    color: black !important;
+}
+.font-roboto{
+    font-family: "Roboto";
+}
+@font-face {
+    font-family: 'Roboto';
+    src: url('/resources/fonts/Roboto-Regular.ttf') format('truetype');
+    font-style: normal;
+    font-weight: normal;
+}
+.text-monospace{
+    font-family: monospace !important;
+}
+
+.pulse {
+    display: block;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--mateflix);
+    cursor: pointer;
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0.4);
+    border:solid 1px #ccc;
+    animation: pulse 2s infinite;
+}
+.pulse:hover {
+    animation: none;
+}
+
+@-webkit-keyframes pulse {
+    0% {
+        -webkit-box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+    }
+    70% {
+        -webkit-box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+    }
+    100% {
+        -webkit-box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+}
+@keyframes pulse {
+    0% {
+        -moz-box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+    }
+    70% {
+        -moz-box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+        box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+    }
+    100% {
+        -moz-box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+}
+
+.max-line-div {
+    overflow: hidden; /* Oculta cualquier contenido que exceda el ancho del div */
+    display: -webkit-box; /* Establece el elemento como una caja flexible */
+    -webkit-box-orient: vertical; /* Orientación vertical de la caja */
+    -webkit-line-clamp: 2; /* Limita el número máximo de líneas a 2 */
+    /* Evita que el texto se divida en múltiples líneas */
+    white-space: normal;
+    line-height: 1;
+}
+.max-line-div-1 {
+    -webkit-line-clamp: 1;
+}
+.max-line-div-2 {
+    -webkit-line-clamp: 2;
+}
+.max-line-div-3 {
+    -webkit-line-clamp: 3;
+}
+.whatsapp-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #25D366;
+    color: white;
+    border-radius: 50%;
+    padding: 15px;
+    font-size: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    text-decoration: none;
+}
+.whatsapp-btn i {
+    color: white;
+}
+
+table .iselector{
+    font-weight: bold;
+}
+
+.shadow-1{
+    -webkit-box-shadow: 0px 3px 3px 1px rgba(0,0,0,0.75);
+    -moz-box-shadow: 0px 3px 3px 1px rgba(0,0,0,0.75);
+    box-shadow: 0px 3px 3px 1px rgba(0,0,0,0.75);
+}
+
+.tachado{
+    text-decoration: line-through;
+    text-decoration-color: tomato;
+}
+
+/*animacion de boton que cambia de color*/
+.resaltar-boton-warning{
+    animation: animacion-jornada-excedida 1s infinite;
+}
+
+.jornada-excedida {
+    animation: animacion-jornada-excedida 1s infinite;
+}
+@keyframes animacion-jornada-excedida {
+    0% { background-color: var(--light); }
+    50% { background-color: var(--warning); }
+}
+
+.nav-top-button {
+    width: 36px;
+    flex: 0 0 36px;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.table-scroll {
+    max-height: 70vh;
+    overflow-y: auto;
+}

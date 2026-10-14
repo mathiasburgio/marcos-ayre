@@ -3,8 +3,8 @@ const router = express.Router()
 const permisos = require("../utils/permisos-middleware")
 const ventas = require("../controllers/ventas")
 
-router.get("/ventas", permisos({login: true, admin:true, resp: "html"}), ventas.getHTML);
-router.get("/ventas/concretar", permisos({login: true, admin: false, resp: "json"}), ventas.concretar);
+router.get("/ventas", permisos({login: true, admin: false, resp: "html"}), ventas.getHTML);
+router.post("/ventas/concretar", permisos({login: true, admin: false, resp: "json"}), ventas.concretarVenta);
 
 router.post("/ventas/buscar", permisos({login: true, admin: true, resp: "json"}), ventas.buscar);
 

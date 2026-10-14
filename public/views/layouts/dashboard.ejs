@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="icon" type="image/png" href="/resources/branding/ventas-icono.png">
+    <%- include('./styles'); %>
+</head>
+    <body class="sidebar-mini overflow-hidden">
+        <div id="cortina" class="bg-primary text-white text-center d-flex justify-content-center align-items-center">
+            <span>
+                <span id="label-cargando">
+                    Cargando...
+                    <div class="spinner-border text-white" role="status">
+                        <span class="sr-only">Cargando...</span>
+                    </div>
+                </span>
+                <div class="d-none text-center">
+                    <button class="btn btn-light btn-flat mx-1" style="width:100px" onclick="window.location.reload()">Recargar</button>
+                    <button class="btn btn-light btn-flat mx-1" style="width:100px" onclick="window.location.href='/inicio'">Panel</button>
+                    <button class="btn btn-light btn-flat mx-1" style="width:100px" onclick="window.location.href='/inicio/cerrar-sesion'">Cerrar sesión</button>
+                </div>
+            </span>
+        </div>
+        <!-- Site wrapper -->
+        <div class="wrapper">
+            <!-- Navbar -->
+            <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+                <!-- Left navbar links -->
+                <ul class="navbar-nav align-items-center" style="min-width: 0;">
+                    <li class="nav-item">
+                        <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+                    </li>
+                    <li class="nav-item d-flex align-items-center" style="min-width: 0;">
+                        <span id="pageName" class="navbar-text font-weight-bold text-truncate py-0" style="max-width: clamp(70px, 20vw, 240px);"><%= title %></span>
+                    </li>
+                </ul>
+            
+                <!-- Right navbar links -->
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item mr-1">
+                        <button id="btn-preferencias" class="nav-top-button btn btn-xs btn-flat btn-light" data-toggle="tooltip" data-trigger="hover" data-placement="left" title="Preferencias de interfaz" aria-label="Abrir preferencias de interfaz"><i class="fas fa-sliders-h"></i></button>
+                    </li>
+                    <li class="nav-item">
+                        <button id="toggle-dark-mode" class="nav-top-button btn btn-xs btn-flat btn-outline-warning" data-toggle="tooltip" data-trigger="hover" data-placement="left" title="Modo oscuro/claro"><i class="fas fa-sun"></i></button>
+                    </li>
+                </ul>
+            </nav>
+            <!-- /.navbar -->
+            
+            <!-- Main Sidebar Container -->
+            <aside class="main-sidebar sidebar-dark-primary elevation-4">
+                <!-- Brand Logo -->
+                <a href="#" class="brand-link  logo-switch d-flex justify-content-center">
+                    <img src="/resources/branding/ventas-logo.png" alt="Icono de Ventas" class="brand-image-xl logo-xs" style="width: 45px; left:14px; top: 13px; filter: brightness(0) invert(1) drop-shadow(3px 3px 2px #555)">
+                    <img src="/resources/branding/ventas-nombre.png" alt="Ventas" class="brand-image-xs logo-xl" style="width: 160px; height: 40px; object-fit: contain; left: 45px; filter: brightness(0) invert(1) drop-shadow(3px 3px 2px #555)">
+                </a>
+            
+                <!-- Sidebar -->
+                <div class="sidebar">
+                    <!-- Sidebar user (optional) -->
+                    <div class="user-panel py-3">
+                        <div class="p-2 border rounded-pill text-white text-truncate text-center">
+                            <i class="fas fa-user mr-2"></i> <span id="emailUsuario">usuario@dominio.com</span>
+                        </div>
+                    </div>
+                
+                    <!-- Sidebar Menu -->
+                    <nav class="mt-2">
+                        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                            <li class="nav-item" nav="inicio">
+                                <a href="/inicio" class="nav-link">
+                                    <i class="nav-icon fas fa-home"></i>
+                                    <p>
+                                        Inicio
+                                        <!--<span class="right badge badge-danger">New</span>-->
+                                    </p>
+                                </a>
+                            </li>
+                            <li class="nav-item" nav="vender" permiso="menu.vender">
+                                <a href="/vender" class="nav-link">
+                                    <i class="nav-icon fas fa-cash-register"></i>
+                                    <p>
+                                        Vender
+                                        <!--<span class="right badge badge-danger">New</span>-->
+                                    </p>
+                                </a>
+                            </li>
+                            <li class="nav-item" nav="productos" permiso="menu.productos">
+                                <a href="/productos" class="nav-link">
+                                    <i class="nav-icon fas fa-list"></i>
+                                    <p>
+                                        Productos
+                                        <!--<span class="right badge badge-danger">New</span>-->
+                                    </p>
+                                </a>
+                            </li>
+                            <li class="nav-item" nav="movimientosCaja" permiso="menu.movimientosCaja">
+                                <a href="/movimientosCaja" class="nav-link">
+                                    <i class="nav-icon fas fa-money-bill-transfer"></i>
+                                    <p>
+                                        Movimientos de caja
+                                        <!--<span class="right badge badge-danger">New</span>-->
+                                    </p>
+                                </a>
+                            </li>
+                            <li class="nav-item" nav="usuarios" permiso="menu.usuarios">
+                                <a href="/usuarios" class="nav-link">
+                                    <i class="nav-icon fas fa-user-shield"></i>
+                                    <p>
+                                        Usuarios
+                                        <!--<span class="right badge badge-danger">New</span>-->
+                                    </p>
+                                </a>
+                            </li>
+                            <li class="nav-item" nav="resumen" permiso="menu.resumen">
+                                <a href="/resumen" class="nav-link">
+                                    <i class="nav-icon fas fa-chart-line"></i>
+                                    <p>
+                                        Resumen
+                                        <!--<span class="right badge badge-danger">New</span>-->
+                                    </p>
+                                </a>
+                            </li>
+                            <li class="nav-item cp" nav="cerrar-sesion">
+                                <a href="#" class="nav-link nav-logout">
+                                    <i class="nav-icon fas fa-door-open text-light"></i>
+                                    <p>
+                                        Cerrar sesión
+                                        <!--<span class="right badge badge-danger">New</span>-->
+                                    </p>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    <!-- /.sidebar-menu -->
+                </div>
+                <!-- /.sidebar -->
+            </aside>
+            
+            <!-- Content Wrapper. Contains page content -->
+            <div class="content-wrapper overflow-hidden">
+                <!-- Content Header (Page header) -->
+                <section class="content-header mb-3">
+                    <div class="container-fluid d-none">
+                        <div class="row mb-2">
+                            <div class="col-auto">
+                                <h1 id="pageName" style="display: inline-block;"><%= title %></h1>
+                            </div>
+                            <div class="col d-none">
+                                <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="#">Home</a></li>
+                                <li class="breadcrumb-item active">Blank Page</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div><!-- /.container-fluid -->
+                </section>
+            
+                <!-- Main content -->
+                <section class="content d-none" style="opacity: 0;">
+                    <div class="container-fluid pb-5">
+                        <%- include(page); %>
+                    </div>
+                </section>
+                <!-- /.content -->
+            </div>
+            <!-- /.content-wrapper -->
+            
+            <footer class="main-footer">
+                <div class="float-right d-none d-sm-block">
+                    <b>Versión</b> Rural - 1.0.0
+                </div>
+                Creado por <span class="font-weight-bold" onclick="menu.abrirVentana('https://instagram.com/mathias.burgio')">Mathias Burgio</span>.
+            </footer>
+            
+          
+        </div>
+        <!-- ./wrapper -->
+
+        <!-- audio -->
+        <audio id="audioPlayer" class="d-none" controls>
+            <source src="/resources/audios/success.mp3" type="audio/mp3" data-audio="success">
+            <source src="/resources/audios/primary.mp3" type="audio/mp3" data-audio="primary">
+            <source src="/resources/audios/warning.mp3" type="audio/mp3" data-audio="warning">
+            <source src="/resources/audios/danger.mp3" type="audio/mp3" data-audio="danger">
+            <source src="/resources/audios/info.mp3" type="audio/mp3" data-audio="info">
+
+            <source src="/resources/audios/tap.mp3" type="audio/mp3" data-audio="tap">
+            <source src="/resources/audios/noti1.mp3" type="audio/mp3" data-audio="noti1">
+            <source src="/resources/audios/noti2.mp3" type="audio/mp3" data-audio="noti2">
+            <source src="/resources/audios/scanner.mp3" type="audio/mp3" data-audio="scanner">
+            <source src="/resources/audios/ray.mp3" type="audio/mp3" data-audio="ray">
+            <source src="/resources/audios/error.mp3" type="audio/mp3" data-audio="error">
+        </audio>
+        <!-- ./audio -->
+
+        <!-- modalPreferencias -->
+        <div id="modalPreferencias" class="d-none">
+            <div class="list-group list-group-flush">
+                <div class="list-group-item px-0">
+                    <label class="d-flex align-items-start mb-0">
+                        <input type="checkbox" class="mt-1 mr-3" name="preferencia-animaciones">
+                        <span>
+                            <b>Animaciones en ventanas emergentes</b>
+                            <small class="d-block text-muted mt-1">Activa o desactiva las transiciones visuales al abrir y cerrar ventanas.</small>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="list-group-item px-0">
+                    <label class="d-flex align-items-start mb-0">
+                        <input type="checkbox" class="mt-1 mr-3" name="preferencia-sonidos">
+                        <span>
+                            <b>Sonidos del sistema</b>
+                            <small class="d-block text-muted mt-1">Reproduce avisos sonoros al confirmar operaciones o mostrar notificaciones.</small>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="list-group-item px-0">
+                    <label class="d-flex align-items-start mb-0">
+                        <input type="checkbox" class="mt-1 mr-3" name="preferencia-mayusculas">
+                        <span>
+                            <b>Mostrar tablas en mayúsculas</b>
+                            <small class="d-block text-muted mt-1">Solo cambia cómo se muestran los datos en las tablas; no modifica la información guardada.</small>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="list-group-item px-0">
+                    <label class="d-flex align-items-start mb-0">
+                        <input type="checkbox" class="mt-1 mr-3" name="preferencia-separadores-numericos">
+                        <span>
+                            <b>Separadores en campos numéricos</b>
+                            <small class="d-block text-muted mt-1">Muestra los miles con punto y los decimales con coma mientras escribe. Los valores se guardan y envían como números.</small>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="list-group-item px-0">
+                    <label class="font-weight-bold mb-1">Encabezado de las tablas</label>
+                    <select name="preferencia-encabezado" class="form-control">
+                        <option value="0">Normal — visible al comienzo de la tabla</option>
+                        <option value="1">Fijo — siempre visible al desplazarse</option>
+                        <option value="2">Dinámico — aparece al pasar el mouse</option>
+                    </select>
+                    <small class="d-block text-muted mt-1">Define cómo se comportan los títulos de las columnas al recorrer una tabla.</small>
+                </div>
+
+                <div class="list-group-item px-0">
+                    <label class="font-weight-bold mb-1">Posición de las ventanas emergentes</label>
+                    <select name="preferencia-posicion-modal" class="form-control">
+                        <option value="centrado">Centrado — en el centro de la pantalla</option>
+                        <option value="arriba">Arriba — al comienzo de la pantalla</option>
+                    </select>
+                    <small class="d-block text-muted mt-1">Define la posición vertical de los modales del sistema.</small>
+                </div>
+            </div>
+        </div>
+        <!-- ./modalPreferencias -->
+
+        <%- include('./scripts'); %>
+        <%- script ? "<script>"+ include(script)+ "</script>" : '' %>
+    </body>
+</html>
