@@ -1,29 +1,97 @@
-<%- include('../layouts/encabezado'); %>
+<div id="ventas" data-evento-id="<%= evento?.id || '' %>">
     <% if(!evento){ %>
-        <p class="alert alert-info">Todavía no hay eventos. Creá un evento para registrar ventas y mesas.</p>
+        <p class="alert alert-info">No hay ningún evento activo. Activá un evento para registrar ventas y mesas.</p>
     <% }else{ %>
-        <p class="text-muted">Evento activo: <strong><%= evento.nombre %></strong></p>
-        <section class="card mb-4"><div class="card-body table-responsive">
-            <h2 class="h5">Mesas</h2>
-            <form id="form-mesa" class="form-row mb-3">
-                <div class="col-md-3 mb-2"><label for="mesa-numero">Número</label><input class="form-control" id="mesa-numero" name="numero" maxlength="50" required></div>
-                <div class="col-md-4 mb-2"><label for="mesa-nombre">Nombre</label><input class="form-control" id="mesa-nombre" name="nombre" maxlength="200" required></div>
-                <div class="col-md-3 mb-2"><label for="mesa-telefono">Teléfono (opcional)</label><input class="form-control" id="mesa-telefono" name="telefono" maxlength="50"></div>
-                <div class="col-md-2 d-flex align-items-end mb-2"><button class="btn btn-primary" type="submit">Crear mesa</button></div>
-            </form>
-            <table class="table"><thead><tr><th>Número</th><th>Nombre</th><th>Total</th><th>Efectivo</th><th>Transferencia</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>
-                <% for(const mesa of mesas){ %>
-                    <tr><td><%= mesa.numero %></td><td><%= mesa.nombre %></td><td><%= mesa.total.toFixed(2) %></td><td><%= mesa.efectivo.toFixed(2) %></td><td><%= mesa.transferencia.toFixed(2) %></td><td><%= (mesa.total - mesa.efectivo - mesa.transferencia).toFixed(2) %></td><td><%= mesa.cobrado ? 'Cobrada' : 'Pendiente' %></td><td><% if(!mesa.cobrado && mesa.total > 0){ %><button type="button" class="btn btn-sm btn-outline-primary" data-cobrar="<%= mesa.id %>">Cobrar</button><% } %></td></tr>
-                <% } %>
-                <% if(!mesas.length){ %><tr><td colspan="8" class="text-muted">No hay mesas</td></tr><% } %>
-            </tbody></table>
-        </div></section>
-        <section class="card"><div class="card-body table-responsive">
-            <h2 class="h5">Últimas ventas</h2>
-            <table class="table"><thead><tr><th>Número</th><th>Fecha</th><th>Usuario</th><th>Mesa</th><th>Total</th><th>Estado</th></tr></thead><tbody>
-                <% for(const venta of ventas){ %><tr><td><%= venta.numeroEvento %></td><td><%= venta.fecha %></td><td><%= venta.usuarioEmail %></td><td><%= venta.mesaId || 'Directa' %></td><td><%= venta.total.toFixed(2) %></td><td><%= venta.cobrado ? 'Cobrada' : 'Pendiente' %></td></tr><% } %>
-                <% if(!ventas.length){ %><tr><td colspan="6" class="text-muted">No hay ventas</td></tr><% } %>
-            </tbody></table>
-        </div></section>
+        <div class="row">
+            <div class="col-12 col-lg-6 mb-3">
+                <section class="card card-primary card-outline h-100">
+                    <div class="card-header d-flex align-items-center">
+                        <strong class="mr-3">Productos</strong>
+                        <button type="button" class="btn btn-primary btn-flat" id="gestionar-mesas"><i class="fas fa-chair mr-1"></i> Gestionar mesas</button>
+                    </div>
+                    <div class="card-body">
+                        <input type="search" class="form-control mb-3" id="buscar-producto" placeholder="Buscar producto..." aria-label="Buscar producto">
+                        <div class="border rounded" style="height: 65vh; overflow-y: auto;">
+                            <table class="table table-sm table-hover mb-0" id="listado-productos-venta">
+                                <thead class="thead-dark"><tr><th>Nombre</th><th class="text-right">Precio</th><th></th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <div class="col-12 col-lg-6 mb-3">
+                <section class="card card-success card-outline">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <strong>Productos que se va a llevar</strong>
+                        <label class="mb-0 d-flex align-items-center">
+                            <input type="checkbox" class="toggle mr-2" id="agrupar-iguales">
+                            Agrupar iguales
+                        </label>
+                    </div>
+                    <div class="card-body">
+                        <div class="border rounded" style="height: 60vh; overflow-y: auto;">
+                            <table class="table table-sm mb-0" id="listado-carrito">
+                                <thead class="thead-dark"><tr><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">Subtotal</th><th></th></tr></thead>
+                                <tbody><tr><td colspan="4" class="text-muted">No hay productos en el ticket</td></tr></tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center border-top mt-3 pt-3">
+                            <button type="button" class="btn btn-sm btn-danger btn-flat" id="limpiar-ticket" disabled>Limpiar lista</button>
+                            <div class="text-right">
+                                <span class="text-muted mr-2">Total</span>
+                                <strong class="h3" id="total-ticket">$ 0</strong>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-success btn-flat btn-block mt-3" id="cobrar-venta" disabled>COBRAR</button>
+                    </div>
+                </section>
+            </div>
+        </div>
     <% } %>
-<%- include('../layouts/pie', {script: 'ventas'}); %>
+</div>
+<div id="modal-cobrar-venta" class="d-none">
+    <div id="cobro-venta">
+        <p class="h5 mb-3">Total: <strong id="cobro-total"></strong></p>
+        <div class="row">
+            <form class="col-12 col-md-6 mb-3 mb-md-0" data-tipo-cobro="abonar" novalidate>
+                <div class="border rounded p-3 h-100 d-flex flex-column">
+                    <h3 class="h5 mb-3">ABONAR</h3>
+                    <div class="form-group">
+                        <label for="cobro-efectivo">Efectivo</label>
+                        <div class="input-group">
+                            <input type="number" id="cobro-efectivo" class="form-control" min="0" step="1">
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-danger btn-flat" data-borrar-pago="efectivo" aria-label="Borrar importe en efectivo" disabled><i class="fas fa-times" aria-hidden="true"></i></button>
+                                <button type="button" class="btn btn-primary btn-flat" data-completar-pago="efectivo">Completar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="cobro-transferencia">Transferencia</label>
+                        <div class="input-group">
+                            <input type="number" id="cobro-transferencia" class="form-control" min="0" step="1">
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-danger btn-flat" data-borrar-pago="transferencia" aria-label="Borrar importe en transferencia" disabled><i class="fas fa-times" aria-hidden="true"></i></button>
+                                <button type="button" class="btn btn-primary btn-flat" data-completar-pago="transferencia">Completar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-flat btn-block mt-auto" data-confirmar-abono disabled>Confirmar</button>
+                </div>
+            </form>
+            <form class="col-12 col-md-6" data-tipo-cobro="mesa">
+                <div class="border rounded p-3 h-100 d-flex flex-column">
+                    <h3 class="h5 mb-3">MESAS</h3>
+                    <div class="table-responsive mb-3" style="max-height: 40vh; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="thead-dark"><tr><th></th><th>Nº</th><th>Nombre</th><th></th></tr></thead>
+                            <tbody id="cobro-listado-mesas"><tr><td colspan="4" class="text-muted">Cargando mesas...</td></tr></tbody>
+                        </table>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-flat btn-block mt-auto" data-confirmar-mesa disabled>Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

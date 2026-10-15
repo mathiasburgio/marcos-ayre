@@ -29,19 +29,19 @@ class Productos{
             $("#nombre").trigger("focus");
         });
         $("#buscar").on("input", () => this.listarProductos());
-        $("#info-stock").on("click", () => modal.message("Cuando hay un evento en curso, el stock no se podrá modificar manualmente desde el sistema. No te preocupes: el sistema permite vender con stock negativo. Esta restricción es para llevar un mejor control."));
+        $("#info-stock").on("click", () => modal.message("Cuando hay un evento en curso, el stock no se podrá modificar manualmente desde el sistema.<br>No te preocupes: el sistema permite vender con stock negativo.<br>Esta restricción es para llevar un mejor control."));
         $("#costo, #margenGanancia").on("input", () => {
             const costo = Number($("#costo").val());
             const margen = Number($("#margenGanancia").val());
             if(Number.isFinite(costo) && Number.isFinite(margen)){
-                numberFormatter.setValue($("#precio"), Number((costo * (1 + margen / 100)).toFixed(2)));
+                numberFormatter.setValue($("#precio"), Math.round(costo * (1 + margen / 100)));
             }
         });
         $("#precio").on("input", () => {
             const costo = Number($("#costo").val());
             const precio = Number($("#precio").val());
             if(Number.isFinite(costo) && Number.isFinite(precio)){
-                numberFormatter.setValue($("#margenGanancia"), costo > 0 ? Number(((precio / costo - 1) * 100).toFixed(2)) : 0);
+                numberFormatter.setValue($("#margenGanancia"), costo > 0 ? Math.round((precio / costo - 1) * 100) : 0);
             }
         });
         $("#datos").on("submit", async ev => {
@@ -49,16 +49,18 @@ class Productos{
             if(!ev.currentTarget.reportValidity() || $("#guardar").prop("disabled")) return;
             const datos = {
                 nombre: $("#nombre").val().trim(),
-                costo: numberFormatter.getValue($("#costo"), false),
-                precio: numberFormatter.getValue($("#precio"), false)
+                costo: numberFormatter.getValue($("#costo")),
+                precio: numberFormatter.getValue($("#precio")),
+                visible: $("#visible").prop("checked") ? 1 : 0
             };
-            if(!this.eventoEnCurso) datos.stock = numberFormatter.getValue($("#stock"), false);
+            if(!this.eventoEnCurso) datos.stock = numberFormatter.getValue($("#stock"));
             if(this.productoSeleccionado) datos.productoId = this.productoSeleccionado.id;
             $("#guardar, #nuevo, #modificar, #eliminar").prop("disabled", true);
             try{
                 const producto = await $.post("/productos/" + (this.productoSeleccionado ? "modificar" : "nuevo"), datos);
                 this.productoSeleccionado = producto;
                 $("#nombre").val(producto.nombre);
+                $("#visible").prop("checked", Number(producto.visible) === 1);
                 numberFormatter.setValue($("#stock"), producto.stock);
                 $("#datos input").prop("disabled", true);
                 $("#accion").text("");
@@ -111,8 +113,8 @@ class Productos{
     async listarProductos(){
         let tbody = "";
         const busqueda = $("#buscar").val().trim().toLowerCase();
-        const formatoPrecio = new Intl.NumberFormat("es-AR", {style: "currency", currency: "ARS"});
-        const formatoStock = new Intl.NumberFormat("es-AR", {maximumFractionDigits: 2});
+        const formatoPrecio = new Intl.NumberFormat("es-AR", {style: "currency", currency: "ARS", maximumFractionDigits: 0});
+        const formatoStock = new Intl.NumberFormat("es-AR", {maximumFractionDigits: 0});
         this.productos.forEach(producto => {
             if(!producto.nombre.toLowerCase().includes(busqueda)) return;
             tbody += `<tr data-producto-id="${producto.id}" class="cp${Number(this.productoSeleccionado?.id) === Number(producto.id) ? " table-active" : ""}">
@@ -131,10 +133,11 @@ class Productos{
             $("#listado-productos tbody tr").removeClass("table-active");
             $(ev.currentTarget).addClass("table-active");
             $("#nombre").val(producto.nombre);
-            numberFormatter.setValue($("#costo"), producto.costo);
-            numberFormatter.setValue($("#precio"), producto.precio);
-            numberFormatter.setValue($("#stock"), producto.stock);
-            numberFormatter.setValue($("#margenGanancia"), Number(producto.costo) > 0 ? Number(((Number(producto.precio) / Number(producto.costo) - 1) * 100).toFixed(2)) : 0);
+            $("#visible").prop("checked", Number(producto.visible) === 1);
+            numberFormatter.setValue($("#costo"), Math.round(Number(producto.costo) || 0));
+            numberFormatter.setValue($("#precio"), Math.round(Number(producto.precio) || 0));
+            numberFormatter.setValue($("#stock"), Math.round(Number(producto.stock) || 0));
+            numberFormatter.setValue($("#margenGanancia"), Number(producto.costo) > 0 ? Math.round((Number(producto.precio) / Number(producto.costo) - 1) * 100) : 0);
             $("#datos input, #guardar").prop("disabled", true);
             $("#modificar, #eliminar").prop("disabled", false);
             $("#accion").text("");

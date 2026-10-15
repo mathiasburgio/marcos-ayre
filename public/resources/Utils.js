@@ -35,22 +35,6 @@ class Utils{
         }
         return fd;
     }
-    decimals(str, dec=2){
-        str = str.toString();
-        let separador_decimal = ",";
-        let a = [];
-
-        if(separador_decimal == "."){
-            a = [".", ","];
-        }else{
-            a = [",", "."];
-        }
-
-        str = "" + str;
-        str = str.replace(a[0], a[1]);
-        if(str == ""){str = 0;}
-        return  parseFloat( parseFloat(str).toFixed(dec) );
-    }
     getUrlQuery(){
         let params = {};
         window.location.search.substring(1).split("&").forEach(param=>{
@@ -86,39 +70,14 @@ class Utils{
             return v.toString(16);  
         });  
     }
-    formatNumberWithSeparators(str, sdecimal=",", smiles="."){
-        str = str.toString();
-        let signo = null;
-        if(str.startsWith("-")){
-            signo = "-";
-            str = str.substring(1);
-        }
-        let [enteros, decimales] = str.split(".");
-        let numeroEntero = enteros.split("");
-        numeroEntero.reverse();
-        let aux = [];
-        let tres = 3;
-        numeroEntero.forEach(n=>{
-            if(tres == 0){
-                tres = 3;
-                aux.push(smiles);
-            }
-            aux.push(n);
-            tres--;
-        })
-        aux.reverse();
-
-        if(decimales){
-            return (signo ? "-" : "") + aux.join("") + sdecimal + decimales;
-        }else{
-            return (signo ? "-" : "") + aux.join("");//devuelvo sin decimales
-            //return aux.join("") + sdecimal + "00"; //fuerza a devolver 2 decimales
-        }
+    formatNumberWithSeparators(str, smiles="."){
+        const numero = Math.round(Number(str));
+        if(!Number.isSafeInteger(numero)) return "";
+        const [signo, enteros] = numero < 0 ? ["-", String(Math.abs(numero))] : ["", String(numero)];
+        return signo + enteros.replace(/\B(?=(\d{3})+(?!\d))/g, smiles);
     }
-    formatNumber(str, dec=0){
-        str = str.toString();
-        let v = dec >= 0 ? this.decimals(str, dec) : parseInt(str);
-        return this.formatNumberWithSeparators(v);
+    formatNumber(str){
+        return this.formatNumberWithSeparators(str);
     }
     getOptions({ar, text, value=null, selected=null}){
         let htmlOptions = "";
@@ -368,7 +327,7 @@ class Utils{
     }
     splitAmountByPercentage(mount, percent, returnBase=false){
         let aux = mount / (1 + (percent / 100));
-        return this.decimals(returnBase ? aux : mount - aux);
+        return Math.round(returnBase ? aux : mount - aux);
     }
     reverserPercent(mount, percent){
         let base = this.splitAmountByPercentage(mount, percent, true);
@@ -381,10 +340,10 @@ class Utils{
         if(typeof v != "number" && typeof v != "string") return def;
         if(typeof v == "string"){
             let valor = v.trim();
-            if(valor === "" || /e/i.test(valor) || /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(valor) == false) return def;
+            if(valor === "" || /^[+-]?\d+$/.test(valor) == false) return def;
         }
         let num = Number(v);
-        return Number.isFinite(num) ? num : def;
+        return Number.isSafeInteger(num) ? num : def;
     }
     getBoolean(v){
         return (v === "true" || v === true || v === "1" || v === 1);

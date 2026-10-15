@@ -13,9 +13,9 @@ module.exports = `
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         imagen TEXT NOT NULL DEFAULT '',
         nombre TEXT NOT NULL DEFAULT '',
-        precio DECIMAL(18, 2) NOT NULL DEFAULT 0,
-        costo DECIMAL(18, 2) NOT NULL DEFAULT 0,
-        stock DECIMAL(18, 2) NOT NULL DEFAULT 0,
+        precio INTEGER NOT NULL DEFAULT 0,
+        costo INTEGER NOT NULL DEFAULT 0,
+        stock INTEGER NOT NULL DEFAULT 0,
         visible INTEGER NOT NULL DEFAULT 1 CHECK (visible IN (0, 1)),
         eliminado INTEGER NOT NULL DEFAULT 0 CHECK (eliminado IN (0, 1))
     );
@@ -34,40 +34,42 @@ module.exports = `
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         eventoId INTEGER NOT NULL,
         fecha TEXT NOT NULL DEFAULT '',
-        numeroGlobal TEXT NOT NULL DEFAULT '',
-        numeroEvento TEXT NOT NULL DEFAULT '',
+        numeroGlobal INTEGER NOT NULL,
+        numeroEvento INTEGER NOT NULL,
         productos TEXT NOT NULL DEFAULT '',
-        total DECIMAL(18, 2) NOT NULL DEFAULT 0,
+        total INTEGER NOT NULL DEFAULT 0,
         usuarioEmail TEXT NOT NULL DEFAULT '',
-        efectivo DECIMAL(18, 2) NOT NULL DEFAULT 0,
-        transferencia DECIMAL(18, 2) NOT NULL DEFAULT 0,
-        mesaId INTEGER NOT NULL DEFAULT 0,
-        cobrado INTEGER NOT NULL DEFAULT 0 CHECK (cobrado IN (0, 1))
+        efectivo INTEGER NOT NULL DEFAULT 0,
+        transferencia INTEGER NOT NULL DEFAULT 0,
+        cajaNumero INTEGER NOT NULL DEFAULT 1
     );
 
     CREATE TABLE IF NOT EXISTS mesas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         eventoId INTEGER NOT NULL,
-        numero TEXT NOT NULL DEFAULT '',
+        numero INTEGER NOT NULL,
         nombre TEXT NOT NULL DEFAULT '',
         telefono TEXT NOT NULL DEFAULT '',
-        total DECIMAL(18, 2) NOT NULL DEFAULT 0,
-        efectivo DECIMAL(18, 2) NOT NULL DEFAULT 0,
-        transferencia DECIMAL(18, 2) NOT NULL DEFAULT 0,
-        cobrado INTEGER NOT NULL DEFAULT 0 CHECK (cobrado IN (0, 1))
+        total INTEGER NOT NULL DEFAULT 0,
+        efectivo INTEGER NOT NULL DEFAULT 0,
+        transferencia INTEGER NOT NULL DEFAULT 0,
+        productos TEXT NOT NULL DEFAULT '',
+        cajaNumero INTEGER NOT NULL DEFAULT 1,
+        cerrada INTEGER NOT NULL DEFAULT 0 CHECK (cerrada IN (0, 1))
     );
 
     CREATE TABLE IF NOT EXISTS movimientosCaja (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         eventoId INTEGER NOT NULL,
         fecha TEXT NOT NULL DEFAULT '',
-        numeroGlobal TEXT NOT NULL DEFAULT '',
-        numeroEvento TEXT NOT NULL DEFAULT '',
+        numeroGlobal INTEGER NOT NULL,
+        numeroEvento INTEGER NOT NULL,
         usuarioEmail TEXT NOT NULL DEFAULT '',
         tipo TEXT NOT NULL DEFAULT '',
         detalle TEXT NOT NULL DEFAULT '',
-        efectivo DECIMAL(18, 2) NOT NULL DEFAULT 0,
-        transferencia DECIMAL(18, 2) NOT NULL DEFAULT 0
+        efectivo INTEGER NOT NULL DEFAULT 0,
+        transferencia INTEGER NOT NULL DEFAULT 0,
+        cajaNumero INTEGER NOT NULL DEFAULT 1
     );
 
     CREATE TABLE IF NOT EXISTS contadores (
@@ -85,6 +87,7 @@ module.exports = `
     CREATE TABLE IF NOT EXISTS bitacora (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         fecha TEXT NOT NULL DEFAULT '',
+        eventoId INTEGER NOT DEFAULT 0,
         usuarioEmail TEXT NOT NULL DEFAULT '',
         clave TEXT NOT NULL DEFAULT '',
         detalle TEXT NOT NULL DEFAULT ''

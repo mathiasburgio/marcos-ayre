@@ -54,6 +54,38 @@ function verificarSesion(req, res){
     res.status(200).json({sesion: true, usuario});
 }
 
+function seleccionarCaja(req, res){
+    const cajaNumero = Number(req.body?.cajaNumero);
+    if(![1, 2, 3, 4].includes(cajaNumero)) return res.status(400).json({error: "Seleccione una caja del 1 al 4"});
+    const cajaAnterior = req.session.data.cajaNumero;
+    req.session.data.cajaNumero = cajaNumero;
+    req.session.save(async err => {
+        if(err){
+            req.session.data.cajaNumero = cajaAnterior;
+            console.log(err);
+            logger.log("Error al seleccionar caja: " + err.message, "error");
+            return res.status(500).json({error: "No se pudo guardar la caja seleccionada"});
+        }
+        try{
+            if(cajaAnterior !== cajaNumero){
+                await db.executeQuery("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), req.session.data.email, "cambio_caja", `Cambio de caja: ${cajaAnterior ? `Caja ${cajaAnterior}` : "Sin caja seleccionada"} → Caja ${cajaNumero}`]);
+            }
+            return res.status(200).json({success: true, cajaNumero});
+        }catch(err){
+            console.log(err);
+            logger.log("Error al registrar el cambio de caja: " + err.message, "error");
+        }
+        req.session.data.cajaNumero = cajaAnterior;
+        req.session.save(err => {
+            if(err){
+                console.log(err);
+                logger.log("Error al restaurar la caja anterior: " + err.message, "error");
+            }
+            res.status(500).json({error: "No se pudo registrar el cambio de caja en la bitácora"});
+        });
+    });
+}
+
 async function subirArchivo(req, res){
     const file = req.files?.file;
     try{
@@ -118,4 +150,4 @@ function abrirVentana(req, res){
     }
 }
 
-module.exports = {hacerBackup, hacerRestore, verificarSesion, subirArchivo, info, mostrarDevTools, obtenerIP, abrirVentana};
+module.exports = {hacerBackup, hacerRestore, verificarSesion, seleccionarCaja, subirArchivo, info, mostrarDevTools, obtenerIP, abrirVentana};

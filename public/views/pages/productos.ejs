@@ -48,16 +48,16 @@
                             <div class="form-group">
                                 <label for="costo">Costo</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" id="costo" min="0" step="0.01" value="0" required>
+                                    <input type="number" class="form-control" id="costo" min="0" step="1" value="0" required>
                                     <div class="input-group-append"><span class="input-group-text">$</span></div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-12 col-sm-4">
                             <div class="form-group">
-                                <label for="margenGanancia">Margen ganancia</label>
+                                <label for="margenGanancia">Margen</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" id="margenGanancia" min="-100" step="0.01" value="0">
+                                    <input type="number" class="form-control" id="margenGanancia" min="-100" step="1" value="0">
                                     <div class="input-group-append"><span class="input-group-text">%</span></div>
                                 </div>
                             </div>
@@ -66,7 +66,7 @@
                             <div class="form-group">
                                 <label for="precio">Precio venta</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" id="precio" min="0" step="0.01" value="0" required>
+                                    <input type="number" class="form-control" id="precio" min="0" step="1" value="0" required>
                                     <div class="input-group-append"><span class="input-group-text">$</span></div>
                                 </div>
                             </div>
@@ -75,11 +75,17 @@
                     <div class="form-group">
                         <label for="stock">Stock</label>
                         <div class="input-group">
-                            <input type="number" class="form-control" id="stock" step="0.01" value="0" required>
+                            <input type="number" class="form-control" id="stock" step="1" value="0" required>
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-light btn-flat" id="info-stock" aria-label="Información sobre el stock"><i class="fas fa-info" aria-hidden="true"></i></button>
+                                <button type="button" class="btn btn-light btn-flat border" id="info-stock" aria-label="Información sobre el stock"><i class="fas fa-info-circle" aria-hidden="true"></i></button>
                             </div>
                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="visible" class="mb-0 cp">
+                            <input type="checkbox" id="visible" class="toggle" checked>
+                            Visible en ventas
+                        </label>
                     </div>
                     <div class="text-right">
                         <button type="submit" class="btn btn-primary btn-flat" id="guardar">Guardar</button>

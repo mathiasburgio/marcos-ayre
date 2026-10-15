@@ -15,33 +15,7 @@ const conf = {
 function prepararEsquema(conexion){
     conexion.exec("BEGIN IMMEDIATE");
     try{
-        if(conexion.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'retiros'").get() &&
-            !conexion.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'movimientosCaja'").get()){
-            conexion.exec("ALTER TABLE retiros RENAME TO movimientosCaja");
-        }
         conexion.exec(require("./db"));
-        const columnasMovimientos = conexion.prepare("PRAGMA table_info(movimientosCaja)").all().map(columna => columna.name);
-        if(!columnasMovimientos.includes("tipo")){
-            conexion.exec("ALTER TABLE movimientosCaja ADD COLUMN tipo TEXT NOT NULL DEFAULT 'egreso'");
-        }
-        if(!columnasMovimientos.includes("fecha")){
-            conexion.exec("ALTER TABLE movimientosCaja ADD COLUMN fecha TEXT NOT NULL DEFAULT ''");
-        }
-        if(conexion.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'retiros'").get()){
-            const columnasRetiros = conexion.prepare("PRAGMA table_info(retiros)").all().map(columna => columna.name);
-            const fecha = columnasRetiros.includes("fecha") ? "fecha" : "''";
-            const tipo = columnasRetiros.includes("tipo") ? "tipo" : "'egreso'";
-            conexion.exec(`
-                INSERT INTO movimientosCaja (eventoId, numeroGlobal, numeroEvento, usuarioEmail, detalle, efectivo, transferencia, fecha, tipo)
-                SELECT eventoId, numeroGlobal, numeroEvento, usuarioEmail, detalle, efectivo, transferencia, ${fecha}, ${tipo} FROM retiros
-            `);
-            conexion.exec("DROP TABLE retiros");
-        }
-        // Migra las bases anteriores: el último evento es siempre el activo.
-        if(conexion.prepare("PRAGMA table_info(eventos)").all().some(columna => columna.name === "cerrado")){
-            conexion.exec("ALTER TABLE eventos DROP COLUMN cerrado");
-        }
-        conexion.exec("UPDATE eventos SET activo = CASE WHEN id = (SELECT MAX(id) FROM eventos) THEN 1 ELSE 0 END");
         conexion.exec("COMMIT");
     }catch(err){
         conexion.exec("ROLLBACK");
@@ -152,41 +126,37 @@ const setRegistro = async (clave, valor) => {
 
 async function getContador(clave){
     try{
-        const rows = await executeQuery("SELECT * FROM contador WHERE clave = ?", [clave]);
+        const rows = await executeQuery("SELECT * FROM contadores WHERE clave = ? ORDER BY id LIMIT 1", [clave]);
         if(rows.length === 1) return rows[0].valor;
-        else return null;
+        else return 0;
     }catch(err){
         logger.log("Error al obtener contador:", err);
         return null;
     }
 }
 
-async function setContador(clave, valor="incr"){
-    if(typeof valor == "string" && (valor[0] == "+" || valor[0] == "-")){
-        if(/^[+-]\d+(?:\.\d+)?$/.test(valor) == false) throw "Valor no válido para contador";
-        const aux = Number(valor);
-        if(Number.isFinite(aux) == false) throw "Valor no válido para contador";
-        const rows = await executeQuery("UPDATE contador SET valor = valor + ? WHERE clave = ? RETURNING valor", [aux, clave]);
-        valor = rows.length === 1 ? rows[0].valor : null;
-    }else if(valor == "incr"){
-        const rows = await executeQuery("UPDATE contador SET valor = valor + 1 WHERE clave = ? RETURNING valor", [clave]);
-        valor = rows.length === 1 ? rows[0].valor : null;
-    }else if(valor == "decr"){
-        const rows = await executeQuery("UPDATE contador SET valor = valor - 1 WHERE clave = ? RETURNING valor", [clave]);
-        valor = rows.length === 1 ? rows[0].valor : null;
-    }else if(typeof valor === "string" && /^\d+(?:\.\d+)?$/.test(valor)){
+function setContador(clave, valor="incr", consultar=null){
+    if(!consultar) return transaction(consulta => setContador(clave, valor, consulta));
+    let incrementar = false;
+    if(valor === "incr" || valor === "decr"){
+        valor = valor === "incr" ? 1 : -1;
+        incrementar = true;
+    }else if(typeof valor === "string" && /^[+-]\d+$/.test(valor)){
         valor = Number(valor);
-        if(Number.isFinite(valor) == false) throw "Valor no válido para contador";
-        const rows = await executeQuery("UPDATE contador SET valor = ? WHERE clave = ? RETURNING valor", [valor, clave]);
-        valor = rows.length === 1 ? rows[0].valor : null;
-    }else if(typeof valor === "number"){
-        if(Number.isFinite(valor) == false) throw "Valor no válido para contador";
-        const rows = await executeQuery("UPDATE contador SET valor = ? WHERE clave = ? RETURNING valor", [valor, clave]);
-        valor = rows.length === 1 ? rows[0].valor : null;
-    }else{
-        throw "Valor no válido para contador";
+        incrementar = true;
+    }else if(typeof valor === "string" && /^\d+$/.test(valor)){
+        valor = Number(valor);
     }
-    return valor;
+    if(!Number.isSafeInteger(valor)) throw "Valor no válido para contador";
+    const rows = consultar("SELECT id, valor FROM contadores WHERE clave = ? ORDER BY id LIMIT 1", [clave]);
+    const nuevoValor = incrementar ? (rows[0]?.valor ?? 0) + valor : valor;
+    if(!Number.isSafeInteger(nuevoValor)) throw "Valor no válido para contador";
+    if(rows.length){
+        consultar("UPDATE contadores SET valor = ? WHERE id = ?", [nuevoValor, rows[0].id]);
+    }else{
+        consultar("INSERT INTO contadores (clave, valor) VALUES (?, ?)", [clave, nuevoValor]);
+    }
+    return nuevoValor;
 }
 
 const restoreBackup = async (input) => {
@@ -209,13 +179,16 @@ const restoreBackup = async (input) => {
         const columnasEsperadas = {
             usuarios: ["id", "nombre", "email", "contrasena", "esAdmin", "eliminado"],
             productos: ["id", "imagen", "nombre", "precio", "costo", "stock", "visible", "eliminado"],
-            eventos: ["id", "fecha", "nombre", "mesas", "activo"],
-            ventas: ["id", "eventoId", "fecha", "numeroGlobal", "numeroEvento", "productos", "total", "usuarioEmail", "efectivo", "transferencia", "mesaId", "cobrado"],
-            mesas: ["id", "eventoId", "numero", "nombre", "telefono", "total", "efectivo", "transferencia", "cobrado"],
-            movimientosCaja: ["id", "eventoId", "numeroGlobal", "numeroEvento", "usuarioEmail", "detalle", "efectivo", "transferencia"]
+            eventos: ["id", "fecha", "nombre", "mesas", "fechaInicio", "fechaFin", "activo"],
+            ventas: ["id", "eventoId", "fecha", "numeroGlobal", "numeroEvento", "productos", "total", "usuarioEmail", "efectivo", "transferencia", "cajaNumero"],
+            mesas: ["id", "eventoId", "numero", "nombre", "telefono", "total", "efectivo", "transferencia", "productos", "cajaNumero", "cerrada"],
+            movimientosCaja: ["id", "eventoId", "fecha", "numeroGlobal", "numeroEvento", "usuarioEmail", "tipo", "detalle", "efectivo", "transferencia", "cajaNumero"],
+            contadores: ["id", "clave", "valor"],
+            registros: ["id", "clave", "valor"],
+            bitacora: ["id", "fecha", "usuarioEmail", "clave", "detalle"]
         };
         for(const [tabla, esperadas] of Object.entries(columnasEsperadas)){
-            if(!tablas.includes(tabla)) continue; // El esquema inicial crea las tablas de versiones anteriores.
+            if(!tablas.includes(tabla)) throw new Error(`El respaldo no tiene la tabla ${tabla}`);
             const columnas = source.prepare(`PRAGMA table_info(${tabla})`).all().map(columna => columna.name);
             if(esperadas.some(columna => !columnas.includes(columna))) throw new Error(`El respaldo tiene una tabla ${tabla} incompatible`);
         }

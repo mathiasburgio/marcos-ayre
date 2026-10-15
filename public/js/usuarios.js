@@ -32,6 +32,7 @@ class Usuarios{
         $("#listado-usuarios tbody tr[data-usuario-id]").on("click", ev=>{
             let usuarioId = $(ev.currentTarget).data("usuario-id");
             let usuario = this.usuarios.find(u => Number(u.id) === Number(usuarioId));
+            if(usuario.email == "admin@admin.com") return modal.message("No se puede editar el usuario <b>admin</b>.<br>Puede <b>habilitarlo/deshabilitarlo</b> desde documentos/ventas-2026/config.json")
             this.modalUsuario(usuario);
         });
         menu.setTheadDynamic();

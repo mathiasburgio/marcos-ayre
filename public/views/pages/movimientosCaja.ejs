@@ -2,32 +2,26 @@
     <div class="card-body">
         <button type="button" class="btn btn-success btn-flat mb-3" id="agregar-movimiento" <%= eventoEnCurso ? '' : 'disabled' %>><i class="fas fa-plus"></i> Agregar movimiento</button>
         <p class="alert alert-info <%= eventoEnCurso ? 'd-none' : '' %>" id="aviso-evento-movimientos">Para registrar ingresos o egresos debe haber un evento iniciado y sin finalizar.</p>
-        <form id="filtros-movimientos" class="form-row align-items-end mb-3">
-            <div class="form-group col-12 col-md-3 mb-2">
-                <label for="busqueda-movimientos">Buscar por</label>
-                <select id="busqueda-movimientos" class="form-control">
-                    <option value="evento">Evento</option>
-                    <option value="fecha">Fecha</option>
-                </select>
-            </div>
-            <div class="form-group col-12 col-md-6 mb-2" id="filtro-evento-movimientos">
+        <div id="filtros-movimientos" class="form-row align-items-end mb-3">
+            <div class="form-group col-12 col-md-9 mb-2">
                 <label for="evento-movimientos">Evento</label>
                 <select id="evento-movimientos" class="form-control">
                     <% for(const evento of eventos){ %>
-                        <option value="<%= evento.id %>"><%= evento.nombre %></option>
+                        <option value="<%= evento.id %>"><%= evento.nombre %> - <%= evento.fecha.split('-').reverse().join('/') %></option>
                     <% } %>
                     <% if(!eventos.length){ %><option value="">No hay eventos</option><% } %>
                 </select>
             </div>
-            <div class="form-group col-12 col-md-6 mb-2 d-none" id="filtro-fecha-movimientos">
-                <label for="fecha-movimientos">Desde la fecha</label>
-                <input type="date" id="fecha-movimientos" class="form-control" disabled required>
+            <div class="form-group col-12 col-md-3 mb-2">
+                <label for="caja-movimientos">Caja</label>
+                <select id="caja-movimientos" class="form-control">
+                    <option value="">Todas</option>
+                    <% for(const cajaNumero of [1, 2, 3, 4]){ %>
+                        <option value="<%= cajaNumero %>">Caja <%= cajaNumero %></option>
+                    <% } %>
+                </select>
             </div>
-            <div class="col-12 col-md-3 mb-2">
-                <button type="submit" class="btn btn-primary btn-flat btn-block">Buscar</button>
-            </div>
-        </form>
-        <p class="text-muted d-none mb-3" id="limite-movimientos"><small>La búsqueda por fecha muestra hasta 1000 movimientos.</small></p>
+        </div>
         <div class="table-responsive table-scroll">
             <table class="table table-sm mb-0" id="listado-movimientos">
                 <thead class="thead-dark">
@@ -39,6 +33,7 @@
                         <th class="text-right">Efectivo</th>
                         <th class="text-right">Transferencia</th>
                         <th>Usuario</th>
+                        <th class="text-right">Saldo</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -50,12 +45,23 @@
     <div id="modal-movimiento-caja">
         <form id="form-movimiento-caja">
             <p class="text-muted">Evento: <strong><%= eventos[0]?.nombre || '' %></strong></p>
-            <div class="form-group">
-                <label for="movimiento-tipo">Tipo</label>
-                <select id="movimiento-tipo" class="form-control" required>
-                    <option value="ingreso">Ingreso</option>
-                    <option value="egreso">Egreso</option>
-                </select>
+            <div class="form-row">
+                <div class="form-group col-6">
+                    <label for="movimiento-caja">Caja</label>
+                    <select id="movimiento-caja" class="form-control" required>
+                        <option value="" disabled>Seleccione una caja</option>
+                        <% for(const cajaNumero of [1, 2, 3, 4]){ %>
+                            <option value="<%= cajaNumero %>">Caja <%= cajaNumero %></option>
+                        <% } %>
+                    </select>
+                </div>
+                <div class="form-group col-6">
+                    <label for="movimiento-tipo">Tipo</label>
+                    <select id="movimiento-tipo" class="form-control" required>
+                        <option value="ingreso">Ingreso</option>
+                        <option value="egreso">Egreso</option>
+                    </select>
+                </div>
             </div>
             <div class="form-group">
                 <label for="movimiento-detalle">Detalle</label>
@@ -64,11 +70,11 @@
             <div class="form-row">
                 <div class="form-group col-12 col-sm-6">
                     <label for="movimiento-efectivo">Efectivo</label>
-                    <input type="number" id="movimiento-efectivo" class="form-control" min="0" step="0.01" value="0" required>
+                    <input type="number" id="movimiento-efectivo" class="form-control" min="0" step="1" value="0" required>
                 </div>
                 <div class="form-group col-12 col-sm-6">
                     <label for="movimiento-transferencia">Transferencia</label>
-                    <input type="number" id="movimiento-transferencia" class="form-control" min="0" step="0.01" value="0" required>
+                    <input type="number" id="movimiento-transferencia" class="form-control" min="0" step="1" value="0" required>
                 </div>
             </div>
             <button type="submit" class="btn btn-primary btn-flat btn-block">Guardar</button>

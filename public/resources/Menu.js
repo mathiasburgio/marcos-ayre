@@ -21,10 +21,37 @@ class Menu{
         this.theadMode = Number(localStorage.getItem("theadMode")) || 0;
         this.setTheadMode(this.theadMode);
 
+        this.printerLocation = localStorage.getItem("printerLocation");
+        if(!["local", "servidor"].includes(this.printerLocation)) this.printerLocation = "local";
+
         this.modalCentered = localStorage.getItem("modalCentered") !== "false";
         modal.element.find(".modal-dialog").toggleClass("modal-dialog-centered", this.modalCentered);
 
         $("#btn-preferencias").on("click", ()=>this.modalPreferencias());
+
+        this.caja = Number($("#btn-caja").attr("data-caja-numero"));
+        if(![1, 2, 3, 4].includes(this.caja)) this.caja = 0;
+        $("#btn-caja").text(this.caja ? `Caja ${this.caja}` : "Seleccione caja")
+            .toggleClass("btn-primary", !!this.caja)
+            .toggleClass("btn-warning caja-sin-seleccionar", !this.caja);
+        $("[data-seleccionar-caja]").filter(`[data-seleccionar-caja='${this.caja}']`).addClass("active");
+        $(document).on("click", "[data-seleccionar-caja]", async ev => {
+            $("[data-seleccionar-caja]").prop("disabled", true);
+            try{
+                const resultado = await $.post("/control/seleccionar-caja", {cajaNumero: $(ev.currentTarget).attr("data-seleccionar-caja")});
+                this.caja = resultado.cajaNumero;
+                $("#btn-caja").text(`Caja ${this.caja}`).attr("data-caja-numero", this.caja)
+                    .removeClass("btn-warning caja-sin-seleccionar").addClass("btn-primary");
+                $("[data-seleccionar-caja]").removeClass("active")
+                    .filter(`[data-seleccionar-caja='${this.caja}']`).addClass("active");
+                if(modal.element.find("[data-seleccionar-caja]").length) await modal.hide(true);
+            }catch(err){
+                console.log(err);
+                this.toast({level: "danger", title: "Caja", message: err.responseJSON?.error || "No se pudo seleccionar la caja"});
+            }finally{
+                $("[data-seleccionar-caja]").prop("disabled", false);
+            }
+        });
 
         this.maskNumbers = localStorage.getItem("maskNumbers") === "true";
         this.setMaskNumbers(this.maskNumbers);
@@ -71,7 +98,27 @@ class Menu{
                 contenido.animate({opacity: 1}, "fast");
                 // Verifica el modo dinámico antes de terminar la transición.
                 this.setTheadDynamic();
-                contenido.promise().done(resolve);
+                contenido.promise().done(() => {
+                    if($("#btn-caja").length && !this.caja){
+                        modal.show({
+                            title: "Seleccione caja",
+                            body: `<p>Seleccione la caja que va a utilizar para registrar las ventas y los cobros de mesas.</p>
+                                <div class="d-flex flex-wrap">${[1, 2, 3, 4].map(numero => `<button type="button" class="btn btn-primary btn-flat m-1" data-seleccionar-caja="${numero}" disabled>Caja ${numero}</button>`).join("")}</div>`,
+                            onShow: () => {
+                                modal.element.find(".modal-header .close").addClass("d-none");
+                                modal.element.on("hide.bs.modal.seleccionarCaja", ev => {
+                                    if(!this.caja) ev.preventDefault();
+                                });
+                            },
+                            onShown: () => modal.element.find("[data-seleccionar-caja]").prop("disabled", false),
+                            onHidden: () => {
+                                modal.element.off("hide.bs.modal.seleccionarCaja");
+                                modal.element.find(".modal-header .close").removeClass("d-none");
+                            }
+                        });
+                    }
+                    resolve();
+                });
             });
         });
     }
@@ -128,6 +175,12 @@ class Menu{
                 this.modalCentered = ev.currentTarget.value == "centrado";
                 localStorage.setItem("modalCentered", this.modalCentered.toString());
                 modal.element.find(".modal-dialog").toggleClass("modal-dialog-centered", this.modalCentered);
+            });
+        contenedor.find("[name='preferencia-impresora']")
+            .val(this.printerLocation)
+            .on("change", ev=>{
+                this.printerLocation = ev.currentTarget.value;
+                localStorage.setItem("printerLocation", this.printerLocation);
             });
     }
     setAnimations(enable=null){

@@ -21,15 +21,12 @@ function identificador(valor, campo="ID"){
     return numero;
 }
 
-// Importes y cantidades con dos decimales se calculan como enteros para evitar
-// que los errores de punto flotante cambien el saldo de una mesa.
-function centavos(valor, campo, {opcional=false}={}){
+function entero(valor, campo, {opcional=false, negativo=false}={}){
     if(opcional && (valor === undefined || valor === null || valor === "" || (typeof valor === "string" && !valor.trim()))) return 0;
     if(typeof valor !== "number" && typeof valor !== "string") throw error(`${campo} debe ser un número`);
     const cadena = String(valor).trim();
-    if(!/^\d+(?:\.\d{1,2})?$/.test(cadena)) throw error(`${campo} debe ser un número no negativo con hasta dos decimales`);
-    const [entero, fraccion=""] = cadena.split(".");
-    const resultado = Number(BigInt(entero) * 100n + BigInt(fraccion.padEnd(2, "0")));
+    if(!(negativo ? /^-?\d+$/ : /^\d+$/).test(cadena)) throw error(`${campo} debe ser un número entero${negativo ? "" : " no negativo"}`);
+    const resultado = Number(cadena);
     if(!Number.isSafeInteger(resultado)) throw error(`${campo} está fuera de rango`);
     return resultado;
 }
@@ -42,9 +39,9 @@ function sumar(...valores){
 }
 
 function subtotal(precio, cantidad){
-    const resultado = Number((BigInt(precio) * BigInt(cantidad) + 50n) / 100n);
+    const resultado = Number(BigInt(precio) * BigInt(cantidad));
     if(!Number.isSafeInteger(resultado)) throw error("El subtotal está fuera de rango");
     return resultado;
 }
 
-module.exports = {error, texto, identificador, centavos, sumar, subtotal};
+module.exports = {error, texto, identificador, entero, sumar, subtotal};

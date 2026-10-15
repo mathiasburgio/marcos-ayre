@@ -229,7 +229,32 @@ table .iselector{
     padding-right: 0;
 }
 
+.nav-top-button.nav-caja-button {
+    width: 140px;
+    flex: 0 0 140px;
+}
+
+.caja-sin-seleccionar {
+    animation: seleccionar-caja 1.2s infinite;
+}
+
+@keyframes seleccionar-caja {
+    0%, 100% { background-color: #ffc107; color: #212529; }
+    50% { background-color: #fff3cd; color: #212529; }
+}
+
 .table-scroll {
-    max-height: 70vh;
+    height: 60vh;
+    overflow-y: scroll;
+}
+
+.resumen-productos-scroll {
+    max-height: 45vh;
     overflow-y: auto;
+}
+
+.resumen-productos-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }

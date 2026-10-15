@@ -37,9 +37,12 @@ async function nuevo(req, res){
         const coincidencias = await db.executeQuery("SELECT id FROM usuarios WHERE email = ?", [email]);
         if(coincidencias.length) return res.status(409).json({error: "Ya existe un usuario con ese email"});
         const contrasenaHash = await getPasswordHash(contrasena);
-        const resultado = await db.executeQuery("INSERT INTO usuarios (nombre, email, contrasena, eliminado, esAdmin) VALUES (?, ?, ?, 0, ?)", [nombre, email, contrasenaHash, esAdmin]);
-        await db.executeQuery("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), email, "nuevo_usuario", "Se creó un nuevo usuario"]);
-        res.status(201).json({id: resultado.insertId, nombre, email, esAdmin});
+        const usuario = db.transaction(consultar => {
+            const resultado = consultar("INSERT INTO usuarios (nombre, email, contrasena, eliminado, esAdmin) VALUES (?, ?, ?, 0, ?)", [nombre, email, contrasenaHash, esAdmin]);
+            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), req.session.data.email, "nuevo_usuario", `Se creó el usuario ${email} (ID ${resultado.insertId})`]);
+            return {id: resultado.insertId, nombre, email, esAdmin};
+        });
+        res.status(201).json(usuario);
     }catch(err){
         console.log(err);
         logger.log("Error en usuarios: " + err.message, "error");
@@ -68,11 +71,11 @@ async function modificar(req, res){
             }else{
                 consultar("UPDATE usuarios SET nombre = ?, email = ?, esAdmin = ? WHERE id = ?", [nombre || usuarios[0].nombre, email, esAdmin, usuarioId]);
             }
+            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), req.session.data.email, "modificar_usuario", `Se modificó el usuario ${usuarioId} (${email})`]);
             return {...usuarios[0], nombre: nombre || usuarios[0].nombre, email, esAdmin};
         });
         if(usuario.error) return res.status(usuario.status).json({error: usuario.error});
         if(usuarioId === Number(req.session.data.id)) Object.assign(req.session.data, {nombre: usuario.nombre, email, esAdmin: !!esAdmin});
-        await db.executeQuery("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), email, "modificar_usuario", "Se modificó un usuario " + usuarioId]);
         res.status(200).json(usuario);
     }catch(err){
         console.log(err);
@@ -83,17 +86,18 @@ async function modificar(req, res){
 async function eliminar(req, res){
     try{
         const usuarioId = identificador(req.body?.usuarioId, "Usuario");
+        const actorEmail = req.session.data.email;
         const resultado = db.transaction(consultar => {
-            const usuarios = consultar("SELECT id, esAdmin FROM usuarios WHERE id = ? AND eliminado = 0", [usuarioId]);
+            const usuarios = consultar("SELECT id, nombre, email, esAdmin FROM usuarios WHERE id = ? AND eliminado = 0", [usuarioId]);
             if(!usuarios.length) return {status: 404, error: "Usuario no encontrado"};
             if(usuarios[0].esAdmin && consultar("SELECT COUNT(*) AS cantidad FROM usuarios WHERE esAdmin = 1 AND eliminado = 0")[0].cantidad <= 1){
                 return {status: 409, error: "No se puede eliminar el último administrador"};
             }
             consultar("UPDATE usuarios SET eliminado = 1 WHERE id = ?", [usuarioId]);
+            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), actorEmail, "eliminar_usuario", `Se eliminó el usuario ${usuarioId} (${usuarios[0].email})`]);
         });
         if(resultado?.error) return res.status(resultado.status).json({error: resultado.error});
         if(usuarioId === Number(req.session.data.id)) delete req.session.data;
-        await db.executeQuery("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), req.session.data.email, "eliminar_usuario", "Se eliminó un usuario " + usuarioId]);
         res.status(200).json({id: usuarioId});
     }catch(err){
         console.log(err);

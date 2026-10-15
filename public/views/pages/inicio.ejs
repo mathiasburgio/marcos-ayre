@@ -1,34 +1,66 @@
 <div id="inicio">
     <div class="row">
-        <div class="col">
-            <div class="card">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card card-primary card-outline h-100">
                 <div class="card-body">
-                    Evento
+                    <div class="text-muted">Evento actual</div>
+                    <h2 class="h4 mb-0"><%= evento?.nombre || 'Sin evento activo' %></h2>
                 </div>
             </div>
         </div>
-        <div class="col">
-            <div class="card">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card card-success card-outline h-100">
                 <div class="card-body">
-                    Ventas
+                    <div class="text-muted">Ventas del evento</div>
+                    <h2 class="h3 mb-0"><%= cantidadVentas %></h2>
                 </div>
             </div>
         </div>
-        <div class="col">
-            <div class="card">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card card-info card-outline h-100">
                 <div class="card-body">
-                    Dominio servidor
+                    <div class="text-muted">Dominio del servidor</div>
+                    <h2 class="h4 mb-0 text-break"><%= dominio %></h2>
                 </div>
             </div>
         </div>
-        <div class="col">
-            <div class="card">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card card-warning card-outline h-100">
                 <div class="card-body">
-                    IP servidor
+                    <div class="text-muted">IP del servidor</div>
+                    <h2 class="h4 mb-0"><%= ip %></h2>
                 </div>
             </div>
         </div>
     </div>
+    <div class="card bg-light border mt-3 text-muted">
+        <div class="card-header bg-transparent font-weight-bold text-dark">Conexión desde otro dispositivo</div>
+        <div class="card-body">
+            <p>Para conectarse al servidor desde otro dispositivo, asegurese que ambos dispositivos estén conectados a la misma red Wi-Fi. Después, abrír el navegador web en el otro dispositivo e ingresar una de estas direcciones:</p>
+            <ul class="mb-3">
+                <li><code>http://<%= dominio %>:<%= puerto %></code></li>
+                <li><code>http://<%= ip %>:<%= puerto %></code></li>
+            </ul>
+            <div class="d-flex flex-wrap justify-content-between align-items-center border-top pt-3">
+                <span class="small mr-3 mb-2 mb-md-0"><i class="fas fa-print mr-1" aria-hidden="true"></i>Para imprimir desde este dispositivo, elegír <strong>Impresora: Local</strong> en Preferencias. Si desea imprimir directamente en el servidor, elegír <strong>Impresora: Servidor</strong> para enviar la impresión a la PC servidor.</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-flat" id="configurar-impresora"><i class="fas fa-sliders-h mr-1" aria-hidden="true"></i> Configurar impresora</button>
+            </div>
+            <small class="d-block border-top mt-3 pt-3"><i class="fas fa-info-circle mr-1" aria-hidden="true"></i>El usuario <strong>admin@admin.com</strong> solo es válido en la PC servidor.</small>
+        </div>
+    </div>
+    <% if(usuario?.esAdmin && esServidor){ %>
+        <div class="card card-outline card-secondary mt-3">
+            <div class="card-header font-weight-bold">Base de datos</div>
+            <div class="card-body">
+                <button type="button" class="btn btn-primary mr-2 mb-2" id="respaldar-base-datos">
+                    <i class="fas fa-download mr-1" aria-hidden="true"></i> Respaldar
+                </button>
+                <button type="button" class="btn btn-warning mb-2" id="restaurar-base-datos" <%= restoreHabilitado ? '' : 'disabled title="La restauración está deshabilitada en config.json"' %>>
+                    <i class="fas fa-upload mr-1" aria-hidden="true"></i> Restaurar
+                </button>
+            </div>
+        </div>
+    <% } %>
 </div>
 <div id="modales" class="d-none">
     <section name="modal-inicio-login">
@@ -59,5 +91,14 @@
                 </form>
             </div>
         </div>
+        <% if(esLocalhost && adminHabilitado){ %>
+            <div class="card bg-light border w-50 mx-auto mt-3 mb-0 text-muted">
+                <div class="card-body py-3 px-4 small">
+                    <div class="font-weight-bold mb-1">Acceso de administrador</div>
+                    <div>Usuario: <strong>admin@admin.com</strong> · Contraseña: <strong>123456789</strong></div>
+                    <div class="mt-1"><i class="fas fa-desktop mr-1" aria-hidden="true"></i>El usuario admin solo es válido en la PC servidor.</div>
+                </div>
+            </div>
+        <% } %>
     </section>
 </div>

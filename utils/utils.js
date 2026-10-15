@@ -179,12 +179,9 @@ async function getFilesInfo(folderPath){
 
     return filesInfo;
 }
-function decimals(val, dec=2){
-    return Number( val.toFixed(dec) );
-}
 function splitAmountByPercentage(mount, percent, returnBase=false){
     let aux = mount / (1 + (percent / 100));
-    return decimals(returnBase ? aux : mount - aux);
+    return Math.round(returnBase ? aux : mount - aux);
 }
 function reverserPercent(mount, percent){
     let base = splitAmountByPercentage(mount, percent, true);
@@ -202,10 +199,10 @@ function getNumber(v, def=null, min = null, max = null){
     if(typeof v != "number" && typeof v != "string") return def;
     if(typeof v == "string"){
         let valor = v.trim();
-        if(valor === "" || /e/i.test(valor) || /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(valor) == false) return def;
+        if(valor === "" || /^[+-]?\d+$/.test(valor) == false) return def;
     }
     let num = Number(v);
-    if(Number.isFinite(num) == false) return def;
+    if(Number.isSafeInteger(num) == false) return def;
     if(min !== null && num < min) return min;
     if(max !== null && num > max) return max;
     return num;
@@ -228,7 +225,6 @@ module.exports = {
     api,
     safeString,
     getFilesInfo,
-    decimals,
     splitAmountByPercentage,
     reverserPercent,
     getNumber,

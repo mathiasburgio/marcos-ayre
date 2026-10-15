@@ -47,7 +47,7 @@ async function createWindow() {
         //inicio el servidor HTTP
         if(!servidorHTTP){
             const servidor = require("./express");
-            servidorHTTP = servidor.listen(config.port, "127.0.0.1");
+            servidorHTTP = servidor.listen(config.port, "0.0.0.0");
             await once(servidorHTTP, "listening");
             logger.log(`Servidor Express iniciado en http://127.0.0.1:${config.port}/`);
         }

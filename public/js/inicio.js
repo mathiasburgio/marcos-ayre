@@ -8,7 +8,11 @@ class Inicio{
         console.log(tieneSesion);
         if(!tieneSesion || tieneSesion.sesion === false) $("body").html($("#modales [name='modal-inicio-login']").html());
         $("#iniciar-sesion").on("click", async () => this.iniciarSesion());
+        $("#mostrar-contrasena").on("click", () => this.mostrarContrasena());
+        $("#respaldar-base-datos").on("click", () => this.respaldarBaseDatos());
+        $("#restaurar-base-datos").on("click", () => this.restaurarBaseDatos());
         await boilerplate(false);
+        $("#configurar-impresora").on("click", () => menu.modalPreferencias());
         menu.hideCortina();
     }
     async iniciarSesion(){
@@ -24,12 +28,38 @@ class Inicio{
                 data: {email, contrasena},
                 timeout: 1_000
             });
-            if(resp.success) window.location.reload(true);
+            if(resp.success) window.location.href = resp.usuario?.esAdmin ? "/inicio" : "/vender";
         }catch(err){
             modal.hide(false, ()=>{
                 console.log(err.responseJSON || err.statusText);
                 modal.message(err.responseJSON?.error || "No se pudo iniciar sesión");
             })
+        }
+    }
+    async respaldarBaseDatos(){
+        modal.waiting("Creando respaldo...");
+        try{
+            const resultado = await $.post("/control/hacer-backup");
+            await modal.hide(true);
+            menu.toast({level: "success", title: "Respaldo", message: `Se creó ${resultado.archivo}`});
+        }catch(err){
+            await modal.hide(true);
+            console.log(err);
+            menu.toast({level: "danger", title: "Respaldo", message: err.responseJSON?.error || "No se pudo crear el respaldo"});
+        }
+    }
+    async restaurarBaseDatos(){
+        if(!await modal.yesno("¿Querés seleccionar un respaldo para restaurar? La base de datos actual será reemplazada.")) return;
+        modal.waiting("Restaurando respaldo...");
+        try{
+            const resultado = await $.post("/control/hacer-restore");
+            await modal.hide(true);
+            if(resultado.cancelado) return;
+            if(resultado.success) window.location.href = "/inicio";
+        }catch(err){
+            await modal.hide(true);
+            console.log(err);
+            menu.toast({level: "danger", title: "Restauración", message: err.responseJSON?.error || "No se pudo restaurar el respaldo"});
         }
     }
     async mostrarContrasena(){

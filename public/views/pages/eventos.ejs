@@ -1,0 +1,100 @@
+<div id="eventos" class="card shadow-sm mx-auto" style="max-width: 1100px;">
+    <div class="card-body">
+        <button type="button" class="btn btn-flat btn-success mb-3" id="agregar-evento" disabled><i class="fas fa-plus"></i> Agregar evento</button>
+        <div class="table-responsive table-scroll">
+            <table class="table table-sm mb-0" id="listado-eventos">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Nombre</th>
+                        <th class="text-right">Mesas</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div id="modales-eventos" class="d-none">
+    <div id="modal-evento">
+        <form id="form-evento">
+            <div class="form-group">
+                <label for="evento-fecha">Fecha</label>
+                <input type="date" id="evento-fecha" name="fecha" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="evento-nombre">Nombre</label>
+                <input type="text" id="evento-nombre" name="nombre" class="form-control" maxlength="200" required>
+            </div>
+            <div class="form-group">
+                <label for="evento-mesas">Cantidad de mesas</label>
+                <input type="number" id="evento-mesas" name="mesas" class="form-control" min="0" step="1" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-flat btn-block">Guardar</button>
+        </form>
+    </div>
+    <div id="modal-resumen-evento">
+        <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+            <div class="mr-3 mb-2"><strong>Evento:</strong> <span id="resumen-evento-nombre"></span></div>
+            <div class="d-flex align-items-center mb-2">
+                <label for="resumen-evento-caja" class="mr-2 mb-0">Caja</label>
+                <select id="resumen-evento-caja" class="form-control form-control-sm w-auto">
+                    <option value="">Todas</option>
+                    <option value="1">Caja 1</option>
+                    <option value="2">Caja 2</option>
+                    <option value="3">Caja 3</option>
+                    <option value="4">Caja 4</option>
+                </select>
+            </div>
+        </div>
+        <div id="resumen-evento-error" class="alert alert-danger d-none"></div>
+        <div id="resumen-evento-datos">
+            <div class="row mb-3">
+                <div class="col-12 col-md-4 mb-2">
+                    <div class="border rounded p-3 h-100">
+                        <div class="text-muted">Cantidad de ventas</div>
+                        <strong id="resumen-cantidad-ventas">0</strong>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4 mb-2">
+                    <div class="border rounded p-3 h-100">
+                        <div class="text-muted">Monto total vendido</div>
+                        <strong id="resumen-monto-total">$ 0</strong>
+                        <div class="small mt-1">Efectivo: <span id="resumen-efectivo">$ 0</span> · Transferencia: <span id="resumen-transferencia">$ 0</span></div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4 mb-2">
+                    <div class="border rounded p-3 h-100">
+                        <div class="text-muted">Monto total ganado</div>
+                        <strong id="resumen-monto-ganado">$ 0</strong>
+                    </div>
+                </div>
+            </div>
+            <h3 class="h6">Productos vendidos</h3>
+            <div class="table-responsive resumen-productos-scroll">
+                <table class="table table-sm mb-0">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Producto</th>
+                            <th class="text-right">Cantidad</th>
+                            <th class="text-right">Costo acumulado</th>
+                            <th class="text-right">Precio venta acumulado</th>
+                            <th class="text-right">Ganancia</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resumen-productos"></tbody>
+                    <tfoot class="thead-dark">
+                        <tr class="font-weight-bold border-top">
+                            <th colspan="2">Total</th>
+                            <th class="text-right text-nowrap" id="resumen-total-costo">$ 0</th>
+                            <th class="text-right text-nowrap" id="resumen-total-precio">$ 0</th>
+                            <th class="text-right text-nowrap" id="resumen-total-ganancia">$ 0</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

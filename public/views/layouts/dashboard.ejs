@@ -7,7 +7,7 @@
     <link rel="icon" type="image/png" href="/resources/branding/ventas-icono.png">
     <%- include('./styles'); %>
 </head>
-    <body class="sidebar-mini overflow-hidden">
+    <body class="sidebar-mini overflow-hidden<%= page === '../pages/ventas' ? ' sidebar-collapse' : '' %>">
         <div id="cortina" class="bg-primary text-white text-center d-flex justify-content-center align-items-center">
             <span>
                 <span id="label-cargando">
@@ -39,6 +39,17 @@
             
                 <!-- Right navbar links -->
                 <ul class="navbar-nav ml-auto">
+                    <% if(usuario){ %>
+                    <li class="nav-item dropdown mr-1">
+                        <button type="button" id="btn-caja" class="nav-top-button nav-caja-button btn btn-xs btn-flat dropdown-toggle <%= [1, 2, 3, 4].includes(usuario.cajaNumero) ? 'btn-primary' : 'btn-warning caja-sin-seleccionar' %>" data-caja-numero="<%= usuario.cajaNumero || '' %>" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><%= [1, 2, 3, 4].includes(usuario.cajaNumero) ? 'Caja ' + usuario.cajaNumero : 'Seleccione caja' %></button>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="btn-caja">
+                            <button type="button" class="dropdown-item" data-seleccionar-caja="1">Caja 1</button>
+                            <button type="button" class="dropdown-item" data-seleccionar-caja="2">Caja 2</button>
+                            <button type="button" class="dropdown-item" data-seleccionar-caja="3">Caja 3</button>
+                            <button type="button" class="dropdown-item" data-seleccionar-caja="4">Caja 4</button>
+                        </div>
+                    </li>
+                    <% } %>
                     <li class="nav-item mr-1">
                         <button id="btn-preferencias" class="nav-top-button btn btn-xs btn-flat btn-light" data-toggle="tooltip" data-trigger="hover" data-placement="left" title="Preferencias de interfaz" aria-label="Abrir preferencias de interfaz"><i class="fas fa-sliders-h"></i></button>
                     </li>
@@ -62,13 +73,14 @@
                     <!-- Sidebar user (optional) -->
                     <div class="user-panel py-3">
                         <div class="p-2 border rounded-pill text-white text-truncate text-center">
-                            <i class="fas fa-user mr-2"></i> <span id="emailUsuario">usuario@dominio.com</span>
+                            <i class="fas fa-user mr-2"></i> <span id="emailUsuario"><%= usuario?.email || '' %></span>
                         </div>
                     </div>
                 
                     <!-- Sidebar Menu -->
                     <nav class="mt-2">
                         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                            <% if(usuario?.esAdmin){ %>
                             <li class="nav-item" nav="inicio">
                                 <a href="/inicio" class="nav-link">
                                     <i class="nav-icon fas fa-home"></i>
@@ -78,51 +90,53 @@
                                     </p>
                                 </a>
                             </li>
-                            <li class="nav-item" nav="vender" permiso="menu.vender">
-                                <a href="/vender" class="nav-link">
+                            <% } %>
+                            <li class="nav-item" nav="ventas" permiso="menu.ventas">
+                                <a href="/ventas" class="nav-link">
                                     <i class="nav-icon fas fa-cash-register"></i>
                                     <p>
-                                        Vender
+                                        Ventas
                                         <!--<span class="right badge badge-danger">New</span>-->
                                     </p>
                                 </a>
                             </li>
-                            <li class="nav-item" nav="productos" permiso="menu.productos">
-                                <a href="/productos" class="nav-link">
-                                    <i class="nav-icon fas fa-list"></i>
-                                    <p>
-                                        Productos
-                                        <!--<span class="right badge badge-danger">New</span>-->
-                                    </p>
-                                </a>
-                            </li>
-                            <li class="nav-item" nav="movimientosCaja" permiso="menu.movimientosCaja">
-                                <a href="/movimientosCaja" class="nav-link">
-                                    <i class="nav-icon fas fa-money-bill-transfer"></i>
-                                    <p>
-                                        Movimientos de caja
-                                        <!--<span class="right badge badge-danger">New</span>-->
-                                    </p>
-                                </a>
-                            </li>
-                            <li class="nav-item" nav="usuarios" permiso="menu.usuarios">
-                                <a href="/usuarios" class="nav-link">
-                                    <i class="nav-icon fas fa-user-shield"></i>
-                                    <p>
-                                        Usuarios
-                                        <!--<span class="right badge badge-danger">New</span>-->
-                                    </p>
-                                </a>
-                            </li>
-                            <li class="nav-item" nav="resumen" permiso="menu.resumen">
-                                <a href="/resumen" class="nav-link">
-                                    <i class="nav-icon fas fa-chart-line"></i>
-                                    <p>
-                                        Resumen
-                                        <!--<span class="right badge badge-danger">New</span>-->
-                                    </p>
-                                </a>
-                            </li>
+                            <% if(usuario?.esAdmin){ %>
+                                <li class="nav-item" nav="productos" permiso="menu.productos">
+                                    <a href="/productos" class="nav-link">
+                                        <i class="nav-icon fas fa-list"></i>
+                                        <p>
+                                            Productos
+                                            <!--<span class="right badge badge-danger">New</span>-->
+                                        </p>
+                                    </a>
+                                </li>
+                                <li class="nav-item" nav="eventos" permiso="menu.eventos">
+                                    <a href="/eventos" class="nav-link">
+                                        <i class="nav-icon fas fa-calendar-alt"></i>
+                                        <p>
+                                            Eventos
+                                        </p>
+                                    </a>
+                                </li>
+                                <li class="nav-item" nav="movimientosCaja" permiso="menu.movimientosCaja">
+                                    <a href="/movimientosCaja" class="nav-link">
+                                        <i class="nav-icon fas fa-money-bill-transfer"></i>
+                                        <p>
+                                            Movimientos de caja
+                                            <!--<span class="right badge badge-danger">New</span>-->
+                                        </p>
+                                    </a>
+                                </li>
+                                <li class="nav-item" nav="usuarios" permiso="menu.usuarios">
+                                    <a href="/usuarios" class="nav-link">
+                                        <i class="nav-icon fas fa-user-shield"></i>
+                                        <p>
+                                            Usuarios
+                                            <!--<span class="right badge badge-danger">New</span>-->
+                                        </p>
+                                    </a>
+                                </li>
+                            <% } %>
                             <li class="nav-item cp" nav="cerrar-sesion">
                                 <a href="#" class="nav-link nav-logout">
                                     <i class="nav-icon fas fa-door-open text-light"></i>
@@ -234,7 +248,7 @@
                         <input type="checkbox" class="mt-1 mr-3" name="preferencia-separadores-numericos">
                         <span>
                             <b>Separadores en campos numéricos</b>
-                            <small class="d-block text-muted mt-1">Muestra los miles con punto y los decimales con coma mientras escribe. Los valores se guardan y envían como números.</small>
+                            <small class="d-block text-muted mt-1">Muestra los miles con punto mientras escribe. Los valores se guardan y envían como números enteros.</small>
                         </span>
                     </label>
                 </div>
@@ -256,6 +270,14 @@
                         <option value="arriba">Arriba — al comienzo de la pantalla</option>
                     </select>
                     <small class="d-block text-muted mt-1">Define la posición vertical de los modales del sistema.</small>
+                </div>
+
+                <div class="list-group-item px-0">
+                    <label class="font-weight-bold mb-1">Impresora</label>
+                    <select name="preferencia-impresora" class="form-control">
+                        <option value="local">Local</option>
+                        <option value="servidor">Servidor</option>
+                    </select>
                 </div>
             </div>
         </div>
