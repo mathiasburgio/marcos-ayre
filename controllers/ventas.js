@@ -67,15 +67,14 @@ function concretarVenta(req, res){
                     consultar("INSERT INTO mesas (id, eventoId, numero, nombre) VALUES (?, ?, ?, ?)", [mesaId, evento.id, String(mesaId), `Mesa ${mesaId}`]);
                 }
                 mesa = obtenerMesa(consultar, mesaId, evento.id);
+                if(mesa.cerrada) return {status: 409, error: "La mesa ya está cerrada. Seleccione la mesa disponible nuevamente"};
                 const productosMesa = JSON.parse(mesa.productos || "[]");
                 const turno = productosMesa.reduce((maximo, producto) => Math.max(maximo, producto.turno), 0) + 1;
                 if(!Number.isSafeInteger(turno)) throw error("No se pudo asignar el turno del pedido", 500);
                 const timestamp = Date.now();
                 productosMesa.push(...productos.map(producto => ({...producto, timestamp, turno})));
                 const totalMesa = sumar(Math.round(Number(mesa.total) || 0), total);
-                const pagoMesa = sumar(Math.round(Number(mesa.efectivo) || 0), Math.round(Number(mesa.transferencia) || 0));
-                const cerrada = totalMesa - pagoMesa < 1 ? 1 : 0;
-                consultar("UPDATE mesas SET total = ?, productos = ?, cerrada = ? WHERE id = ?", [totalMesa, JSON.stringify(productosMesa), cerrada, mesaId]);
+                consultar("UPDATE mesas SET total = ?, productos = ? WHERE id = ?", [totalMesa, JSON.stringify(productosMesa), mesaId]);
                 mesa = obtenerMesa(consultar, mesaId, evento.id);
             }else{
                 const numeroGlobal = db.setContador("numeroGlobal", "incr", consultar);
@@ -96,6 +95,7 @@ function concretarVenta(req, res){
             }
             return {success: true, venta, mesa};
         });
+        if(resultado.error) return res.status(resultado.status).json({error: resultado.error});
         res.status(201).json(resultado);
     }catch(err){
         console.log(err);
@@ -117,16 +117,18 @@ function cobrarMesa(req, res){
         const resultado = db.transaction(consultar => {
             const evento = ultimoEvento(consultar);
             const mesa = obtenerMesa(consultar, mesaId, evento.id);
-            if(mesa.cerrada) throw error("La mesa ya está cerrada", 409);
+            if(mesa.cerrada) return {status: 409, error: "La mesa ya está cerrada"};
             const nuevoEfectivo = sumar(Math.round(Number(mesa.efectivo) || 0), efectivo);
             const nuevaTransferencia = sumar(Math.round(Number(mesa.transferencia) || 0), transferencia);
             const total = Math.round(Number(mesa.total) || 0);
             const saldo = total - sumar(nuevoEfectivo, nuevaTransferencia);
-            if(saldo < 0) throw error("El cobro supera el saldo de la mesa");
-            const cerrada = saldo < 1 ? 1 : 0;
-            consultar("UPDATE mesas SET efectivo = ?, transferencia = ?, cerrada = ?, cajaNumero = ? WHERE id = ?", [nuevoEfectivo, nuevaTransferencia, cerrada, cajaNumero, mesaId]);
+            if(saldo < 0) return {status: 400, error: "El cobro supera el saldo de la mesa"};
+            if(saldo > 0) return {status: 400, error: "Complete el saldo de la mesa antes de confirmar"};
+            consultar("UPDATE mesas SET efectivo = ?, transferencia = ?, cerrada = 1, cajaNumero = ? WHERE id = ?", [nuevoEfectivo, nuevaTransferencia, cajaNumero, mesaId]);
+            consultar("INSERT INTO mesas (eventoId, numero, nombre) VALUES (?, ?, ?)", [evento.id, mesa.numero, `Mesa ${mesa.numero}`]);
             return {success: true, mesa: obtenerMesa(consultar, mesaId, evento.id), saldo};
         });
+        if(resultado.error) return res.status(resultado.status).json({error: resultado.error});
         res.status(200).json(resultado);
     }catch(err){
         console.log(err);
@@ -147,7 +149,7 @@ function crearMesa(req, res){
         const datos = datosMesa(req.body || {});
         const mesa = db.transaction(consultar => {
             const evento = ultimoEvento(consultar);
-            if(consultar("SELECT id FROM mesas WHERE eventoId = ? AND numero = ?", [evento.id, datos.numero]).length){
+            if(consultar("SELECT id FROM mesas WHERE eventoId = ? AND numero = ? AND cerrada = 0", [evento.id, datos.numero]).length){
                 throw error("Ya existe una mesa con ese número en el evento activo", 409);
             }
             const resultado = consultar("INSERT INTO mesas (eventoId, nombre, numero, telefono) VALUES (?, ?, ?, ?)", [evento.id, datos.nombre, datos.numero, datos.telefono]);
@@ -166,15 +168,17 @@ function editarMesa(req, res){
         const mesa = db.transaction(consultar => {
             const evento = ultimoEvento(consultar);
             const mesaAnterior = obtenerMesa(consultar, mesaId, evento.id);
+            if(mesaAnterior.cerrada) return {status: 409, error: "No se puede modificar una mesa cerrada"};
             const datos = datosMesa({...mesaAnterior, ...req.body});
-            if(consultar("SELECT id FROM mesas WHERE eventoId = ? AND numero = ? AND id != ?", [evento.id, datos.numero, mesaId]).length){
+            if(consultar("SELECT id FROM mesas WHERE eventoId = ? AND numero = ? AND id != ? AND cerrada = 0", [evento.id, datos.numero, mesaId]).length){
                 throw error("Ya existe una mesa con ese número en el evento activo", 409);
             }
             consultar("UPDATE mesas SET nombre = ?, numero = ?, telefono = ? WHERE id = ?", [datos.nombre, datos.numero, datos.telefono, mesaId]);
             const mesaActual = obtenerMesa(consultar, mesaId, evento.id);
-            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), req.session.data.email, "modificar_mesa", `Se modificó la mesa ${mesaActual.numero} (ID ${mesaId}); nombre anterior: ${mesaAnterior.nombre}, teléfono anterior: ${mesaAnterior.telefono}; nombre nuevo: ${mesaActual.nombre}, teléfono nuevo: ${mesaActual.telefono}`]);
+            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle, eventoId) VALUES (?, ?, ?, ?, COALESCE((SELECT id FROM eventos WHERE activo = 1 AND fechaInicio != '' AND fechaFin = '' ORDER BY id DESC LIMIT 1), 0))", [new Date().toISOString(), req.session.data.email, "modificar_mesa", `Se modificó la mesa ${mesaActual.numero} (ID ${mesaId}); nombre anterior: ${mesaAnterior.nombre}, teléfono anterior: ${mesaAnterior.telefono}; nombre nuevo: ${mesaActual.nombre}, teléfono nuevo: ${mesaActual.telefono}`]);
             return mesaActual;
         });
+        if(mesa.error) return res.status(mesa.status).json({error: mesa.error});
         res.status(200).json({success: true, mesa});
     }catch(err){
         console.log(err);
@@ -189,9 +193,9 @@ async function listadoMesas(req, res){
             if(!eventos.length) return [];
             const evento = eventos[0];
             for(let numero = 1; numero <= Number(evento.mesas); numero++){
-                consultar("INSERT INTO mesas (eventoId, numero, nombre, telefono) SELECT ?, ?, ?, '' WHERE NOT EXISTS (SELECT id FROM mesas WHERE eventoId = ? AND numero = ?)", [evento.id, String(numero), `Mesa ${numero}`, evento.id, String(numero)]);
+                consultar("INSERT INTO mesas (eventoId, numero, nombre, telefono) SELECT ?, ?, ?, '' WHERE NOT EXISTS (SELECT id FROM mesas WHERE eventoId = ? AND numero = ? AND cerrada = 0)", [evento.id, String(numero), `Mesa ${numero}`, evento.id, String(numero)]);
             }
-            return consultar("SELECT * FROM mesas WHERE eventoId = ? ORDER BY CAST(numero AS INTEGER), id", [evento.id]);
+            return consultar("SELECT * FROM mesas WHERE eventoId = ? AND cerrada = 0 ORDER BY CAST(numero AS INTEGER), id", [evento.id]);
         });
         res.status(200).json(mesas);
     }catch(err){
@@ -208,12 +212,13 @@ async function buscar(req, res){
             condiciones.push("id = ?");
             parametros.push(identificador(req.body.id));
         }
-        const ventas = await db.executeQuery(`SELECT * FROM ventas WHERE ${condiciones.join(" AND ")} ORDER BY id DESC LIMIT 500`, parametros);
+        const ventas = await db.executeQuery(`SELECT * FROM ventas WHERE ${condiciones.join(" AND ")} ORDER BY id DESC LIMIT 100`, parametros);
         res.status(200).json(ventas.map(venta => ({...venta, productos: JSON.parse(venta.productos)})));
     }catch(err){
         console.log(err);
         logger.log("Error en ventas: " + err.message, "error");
     }
+    if(!res.headersSent) res.status(500).json({error: "No se pudieron buscar las ventas"});
 }
 
 async function getHTML(req, res){

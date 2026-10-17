@@ -17,6 +17,7 @@ module.exports = `
         costo INTEGER NOT NULL DEFAULT 0,
         stock INTEGER NOT NULL DEFAULT 0,
         visible INTEGER NOT NULL DEFAULT 1 CHECK (visible IN (0, 1)),
+        prioridad INTEGER NOT NULL DEFAULT 5,
         eliminado INTEGER NOT NULL DEFAULT 0 CHECK (eliminado IN (0, 1))
     );
 
@@ -86,8 +87,8 @@ module.exports = `
 
     CREATE TABLE IF NOT EXISTS bitacora (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        eventoId INTEGER NOT NULL DEFAULT 0,
         fecha TEXT NOT NULL DEFAULT '',
-        eventoId INTEGER NOT DEFAULT 0,
         usuarioEmail TEXT NOT NULL DEFAULT '',
         clave TEXT NOT NULL DEFAULT '',
         detalle TEXT NOT NULL DEFAULT ''

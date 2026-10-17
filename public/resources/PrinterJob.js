@@ -1,4 +1,4 @@
-class PrintJob {
+class PrinterJob {
     constructor({ paper = 58, printerName = null } = {}) {
         this.job = [];
         this.paper = paper;
@@ -38,12 +38,13 @@ class PrintJob {
     // 🧾 ELEMENTOS
     // =========================
 
-    addLine({ text = "", bold = false, align = "left" } = {}) {
+    addLine({ text = "", bold = false, align = "left", grande = false } = {}) {
         this.job.push({
             type: "line",
             text,
             bold,
-            align
+            align,
+            grande
         });
     }
 
@@ -72,16 +73,43 @@ class PrintJob {
     // =========================
     // 🚀 ENVIAR
     // =========================
+    static validarIP(ip) {
+        if(typeof ip !== "string") return false;
+        const partes = ip.split(".");
+        return partes.length === 4 && partes.every(parte => /^(0|[1-9]\d{0,2})$/.test(parte) && Number(parte) <= 255)
+            && Number(partes[0]) > 0 && Number(partes[0]) < 224 && ip !== "255.255.255.255";
+    }
+
     async print() {
-        if (window.electronAPI) {
-            return await window.electronAPI.imprimir({
-                job: this.job,
-                paper: this.paper,
-                printerName: this.printerName
-            });
-        } else {
-            console.warn("No está en Electron");
+        const destino = localStorage.getItem("printerLocation") || "local";
+        if(destino === "ninguna") return {ok: true, omitida: true};
+        const ip = (localStorage.getItem("printerIP") || "").trim();
+        if(!["local", "servidor", "ip", "rawbt"].includes(destino)) throw new Error("Seleccione una impresora en Preferencias de interfaz");
+        if(destino === "rawbt" && !/Android/i.test(navigator.userAgent)){
+            throw new Error("RawBT requiere un dispositivo Android con la app RawBT y su impresora Bluetooth configuradas");
         }
+        if(destino === "ip" && !PrinterJob.validarIP(ip)){
+            throw new Error("Ingrese una IP válida para la impresora en Preferencias de interfaz");
+        }
+        if(destino === "local" && window.electronAPI?.imprimirTicket){
+            return await window.electronAPI.imprimirTicket({job: this.job, charsPerLine: this.size});
+        }
+        const resultado = await $.ajax({
+            url: "/control/imprimir-ticket",
+            method: "POST",
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify({job: this.job, charsPerLine: this.size, destino, ...(destino === "ip" ? {ip} : {})})
+        });
+        if(destino === "rawbt"){
+            if(resultado?.ok !== true || typeof resultado.base64 !== "string" || !/^[A-Za-z0-9+/]+={0,2}$/.test(resultado.base64) || resultado.base64.length % 4 !== 0){
+                throw new Error("El servidor no devolvió un ticket válido para RawBT");
+            }
+            const url = `intent:base64,${resultado.base64}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
+            window.location.href = url;
+            return {ok: true, rawbt: true};
+        }
+        return resultado;
     }
 }
 

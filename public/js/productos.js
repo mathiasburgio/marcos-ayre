@@ -7,12 +7,12 @@ class Productos{
     async iniciar(){
         await boilerplate(false);
         this.eventoEnCurso = $("#productos").attr("data-evento-en-curso") === "true";
-        $("#datos input, #guardar, #modificar, #eliminar").prop("disabled", true);
+        $("#datos input, #datos select, #guardar, #modificar, #eliminar").prop("disabled", true);
         $("#nuevo").on("click", () => {
             this.productoSeleccionado = null;
             $("#datos")[0].reset();
             $("#costo, #margenGanancia, #precio, #stock").each((indice, input) => numberFormatter.setValue($(input), 0));
-            $("#datos input").prop("disabled", false);
+            $("#datos input, #datos select").prop("disabled", false);
             $("#stock").prop("disabled", this.eventoEnCurso);
             $("#guardar").prop("disabled", false);
             $("#modificar, #eliminar").prop("disabled", true);
@@ -22,7 +22,7 @@ class Productos{
         });
         $("#modificar").on("click", () => {
             if(!this.productoSeleccionado) return;
-            $("#datos input").prop("disabled", false);
+            $("#datos input, #datos select").prop("disabled", false);
             $("#stock").prop("disabled", this.eventoEnCurso);
             $("#guardar").prop("disabled", false);
             $("#accion").text("Modificar");
@@ -51,6 +51,7 @@ class Productos{
                 nombre: $("#nombre").val().trim(),
                 costo: numberFormatter.getValue($("#costo")),
                 precio: numberFormatter.getValue($("#precio")),
+                prioridad: Number($("#prioridad").val()),
                 visible: $("#visible").prop("checked") ? 1 : 0
             };
             if(!this.eventoEnCurso) datos.stock = numberFormatter.getValue($("#stock"));
@@ -60,9 +61,10 @@ class Productos{
                 const producto = await $.post("/productos/" + (this.productoSeleccionado ? "modificar" : "nuevo"), datos);
                 this.productoSeleccionado = producto;
                 $("#nombre").val(producto.nombre);
+                $("#prioridad").val(producto.prioridad);
                 $("#visible").prop("checked", Number(producto.visible) === 1);
                 numberFormatter.setValue($("#stock"), producto.stock);
-                $("#datos input").prop("disabled", true);
+                $("#datos input, #datos select").prop("disabled", true);
                 $("#accion").text("");
                 await this.obtenerProductos();
             }catch(err){
@@ -89,7 +91,7 @@ class Productos{
                 this.productoSeleccionado = null;
                 $("#datos")[0].reset();
                 $("#costo, #margenGanancia, #precio, #stock").each((indice, input) => numberFormatter.setValue($(input), 0));
-                $("#datos input, #guardar, #modificar").prop("disabled", true);
+                $("#datos input, #datos select, #guardar, #modificar").prop("disabled", true);
                 $("#accion").text("");
                 await this.obtenerProductos();
             }catch(err){
@@ -133,12 +135,13 @@ class Productos{
             $("#listado-productos tbody tr").removeClass("table-active");
             $(ev.currentTarget).addClass("table-active");
             $("#nombre").val(producto.nombre);
+            $("#prioridad").val(producto.prioridad);
             $("#visible").prop("checked", Number(producto.visible) === 1);
             numberFormatter.setValue($("#costo"), Math.round(Number(producto.costo) || 0));
             numberFormatter.setValue($("#precio"), Math.round(Number(producto.precio) || 0));
             numberFormatter.setValue($("#stock"), Math.round(Number(producto.stock) || 0));
             numberFormatter.setValue($("#margenGanancia"), Number(producto.costo) > 0 ? Math.round((Number(producto.precio) / Number(producto.costo) - 1) * 100) : 0);
-            $("#datos input, #guardar").prop("disabled", true);
+            $("#datos input, #datos select, #guardar").prop("disabled", true);
             $("#modificar, #eliminar").prop("disabled", false);
             $("#accion").text("");
         });

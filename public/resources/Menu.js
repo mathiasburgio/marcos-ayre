@@ -22,7 +22,9 @@ class Menu{
         this.setTheadMode(this.theadMode);
 
         this.printerLocation = localStorage.getItem("printerLocation");
-        if(!["local", "servidor"].includes(this.printerLocation)) this.printerLocation = "local";
+        if(!["local", "servidor", "ip", "rawbt", "ninguna"].includes(this.printerLocation)) this.printerLocation = "local";
+        localStorage.setItem("printerLocation", this.printerLocation);
+        this.printerIP = localStorage.getItem("printerIP") || "";
 
         this.modalCentered = localStorage.getItem("modalCentered") !== "false";
         modal.element.find(".modal-dialog").toggleClass("modal-dialog-centered", this.modalCentered);
@@ -61,6 +63,15 @@ class Menu{
         });
 
         $('.main-header [data-toggle="tooltip"]').tooltip();
+        $("#creado-por").popover({
+            html: true,
+            trigger: "hover focus",
+            placement: "top",
+            container: "body",
+            content: () => $("#popover-creado-por").html()
+        });
+        $(document).off("click.contactoMathias", "#ver-creador, [data-contactar-mathias]")
+            .on("click.contactoMathias", "#ver-creador, [data-contactar-mathias]", () => this.mostrarContactoMathias());
 
         let menuSelectedItem = $("[href='" + window.location.pathname + "']");
         if(menuSelectedItem.length == 1) menuSelectedItem.addClass("active");
@@ -71,6 +82,26 @@ class Menu{
             if(!resp) return;
             window.location.href = "/inicio/cerrar-sesion";
         })
+    }
+    mostrarContactoMathias(){
+        $("#creado-por").popover("hide");
+        const contenido = $("<div>").html($("#popover-creado-por").html() || $("[data-plantilla-contacto-mathias]").first().html());
+        contenido.find("[data-contacto='telefono']").append(' <button type="button" data-abrir-contacto="https://wa.me/5492227571951" class="btn btn-sm btn-success btn-flat ml-2"><i class="fab fa-whatsapp mr-1" aria-hidden="true"></i>Enviar Whatsapp</button>');
+        contenido.find("[data-contacto='instagram']").append(' <button type="button" data-abrir-contacto="https://instagram.com/mathias.burgio" class="btn btn-sm btn-primary btn-flat ml-2"><i class="fab fa-instagram mr-1" aria-hidden="true"></i>visitar instagram</button>');
+        modal.show({title: "Creado por Mathias Burgio", body: contenido.html(), buttons: "close"});
+        modal.element.find("[data-abrir-contacto]").on("click", async ev => {
+            const boton = $(ev.currentTarget).prop("disabled", true);
+            try{
+                const url = boton.attr("data-abrir-contacto");
+                // El login no tiene sesión para el endpoint HTTP; Electron abre el navegador local por IPC.
+                if(!$("#btn-caja").length && window.electronAPI?.abrirNavegador) await window.electronAPI.abrirNavegador(url);
+                else await this.abrirVentana(url);
+            }catch(err){
+                this.toast({level: "danger", title: "Contacto", message: err.responseJSON?.error || "No se pudo abrir el enlace en el navegador"});
+            }finally{
+                boton.prop("disabled", false);
+            }
+        });
     }
     abrirEnNuevaVentana(url){
         let enlace = $("<a>", {
@@ -176,12 +207,89 @@ class Menu{
                 localStorage.setItem("modalCentered", this.modalCentered.toString());
                 modal.element.find(".modal-dialog").toggleClass("modal-dialog-centered", this.modalCentered);
             });
+        const actualizarImpresora = () => {
+            contenedor.find("[data-preferencia-impresora-ip]").toggleClass("d-none", this.printerLocation !== "ip");
+            contenedor.find("[data-preferencia-impresora-rawbt]").toggleClass("d-none", this.printerLocation !== "rawbt");
+            contenedor.find("[name='instalar-impresora-termica']").prop("disabled", this.printerLocation !== "local");
+            contenedor.find("[name='probar-impresora']").prop("disabled", this.printerLocation === "ninguna");
+        };
+        contenedor.find("[name='instalar-impresora-termica']").toggleClass("d-none", !window.entornoElectron?.cliente && contenedor.find("[name='instalar-impresora-termica']").attr("data-instalar-en-servidor") !== "true");
+        contenedor.find("[name='preferencia-impresora-ip']").val(this.printerIP)
+            .attr("id", "preferencia-impresora-ip-actual")
+            .toggleClass("is-invalid", !!this.printerIP && !PrinterJob.validarIP(this.printerIP)).on("input", ev => {
+                this.printerIP = ev.currentTarget.value.trim();
+                localStorage.setItem("printerIP", this.printerIP);
+                $(ev.currentTarget).toggleClass("is-invalid", !PrinterJob.validarIP(this.printerIP));
+            });
+        contenedor.find("label[for='preferencia-impresora-ip']").attr("for", "preferencia-impresora-ip-actual");
         contenedor.find("[name='preferencia-impresora']")
             .val(this.printerLocation)
             .on("change", ev=>{
                 this.printerLocation = ev.currentTarget.value;
                 localStorage.setItem("printerLocation", this.printerLocation);
+                actualizarImpresora();
             });
+        actualizarImpresora();
+        contenedor.find("[name='probar-impresora']").on("click", async ev => {
+            if(this.printerLocation === "ninguna") return;
+            const boton = $(ev.currentTarget).prop("disabled", true);
+            try{
+                const resultado = await new PrintJob().test();
+                if(!resultado?.omitida) this.toast({level: "success", title: "Impresora", message: "Se envió la página de prueba a la impresora seleccionada"});
+            }catch(err){
+                this.toast({level: "danger", title: "Impresora", message: err.responseJSON?.error || err.message || "No se pudo enviar la página de prueba"});
+            }finally{
+                boton.prop("disabled", this.printerLocation === "ninguna");
+            }
+        });
+        contenedor.find("[name='instalar-impresora-termica']").prop("disabled", this.printerLocation !== "local").on("click", async ev => {
+            if(this.printerLocation !== "local") return;
+            $(ev.currentTarget).prop("disabled", true);
+            await modal.hide(true);
+            let procesandoImpresora = false;
+            modal.show({
+                title: "Instalar impresora térmica",
+                size: "lg",
+                body: $("#modal-instalar-impresora").html(),
+                buttons: [
+                    {color: "secondary", text: "Cerrar", name: "dismiss"},
+                    {color: "secondary", text: "Test", name: "test-impresora-termica"},
+                    {color: "primary", text: "Configurar impresora", name: "configurar-impresora-termica"}
+                ],
+                onShow: () => {
+                    modal.element.on("hide.bs.modal.instalarImpresora", ev => {
+                        if(procesandoImpresora) ev.preventDefault();
+                    });
+                },
+                onHidden: () => modal.element.off("hide.bs.modal.instalarImpresora"),
+                onShown: () => {
+                    modal.element.find("[name='configurar-impresora-termica'], [name='test-impresora-termica']").on("click", async ev => {
+                        if(procesandoImpresora) return;
+                        procesandoImpresora = true;
+                        const configurar = $(ev.currentTarget).attr("name") === "configurar-impresora-termica";
+                        const botones = modal.element.find(".modal-footer button").prop("disabled", true);
+                        try{
+                            if(configurar){
+                                modal.waiting2(true, "Configurando impresora. Acepte los permisos de Windows para continuar...");
+                                if(window.entornoElectron?.cliente) await window.electronAPI.configurarImpresora();
+                                else await $.post("/control/instalar-impresora-termica-directa");
+                                this.toast({level: "success", title: "Impresora", message: "La impresora térmica quedó configurada"});
+                            }
+                            modal.waiting2(true, "Enviando página de prueba a la impresora...");
+                            await new PrintJob().test();
+                            this.toast({level: "success", title: "Impresora", message: "Se envió la página de prueba a la impresora térmica"});
+                        }catch(err){
+                            console.log(err);
+                            this.toast({level: "danger", title: "Impresora", message: err.responseJSON?.error || err.message || "No se pudo completar la operación de la impresora"});
+                        }finally{
+                            procesandoImpresora = false;
+                            modal.waiting2(false);
+                            botones.prop("disabled", false);
+                        }
+                    });
+                }
+            });
+        });
     }
     setAnimations(enable=null){
         if(enable === true) this.animations = true;
@@ -434,7 +542,7 @@ class Menu{
             position: 'top',
             showConfirmButton: false,
             timer: time
-        }) 
+        });
         if(sound) this.playSound(level);
     }
     setExpiration(serverTime=null, expirationDate=null){
@@ -481,8 +589,9 @@ class Menu{
             if(showon && showon.length > 0 && showon.includes(primordial.emprendimiento.tipo) == true) $(ele).removeClass("d-none");
         });
     }
-    abrirVentana(url){
-        if(window?.electronAPI?.isElectron) $.get("/control/abrir-ventana?" + encodeURIComponent(url));
-        else window.open(url, "_blank");
+    async abrirVentana(url){
+        if(window.entornoElectron?.cliente) return await window.electronAPI.abrirNavegador(url);
+        if(window?.electronAPI?.isElectron) return await $.get("/control/abrir-ventana?" + encodeURIComponent(url));
+        else window.open(url, "_blank", "noopener,noreferrer");
     }
 }

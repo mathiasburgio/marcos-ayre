@@ -18,6 +18,7 @@
 <script src="/resources/Menu.js"></script>
 <script src="/resources/SuperExcel.js"></script>
 <script src="/resources/Impresor.js"></script>
+<script src="/resources/PrinterJob.js"></script>
 <script src="/resources/job-printer-front.js"></script>
 <script src="/resources/Imagine.js"></script>
 <script src="/resources/SimpleCRUD.js"></script>
@@ -35,6 +36,7 @@
     var fechas, modal, utils, numberFormatter, menu, superExcel, impresor, primordial;
     var localDB = null;
     async function boilerplate(loadPrimordial=true){
+        window.entornoElectron = window.electronAPI?.obtenerEntorno ? await window.electronAPI.obtenerEntorno() : null;
         modal = new Modal();
         utils = new Utils();
         numberFormatter = new NumberFormatter();

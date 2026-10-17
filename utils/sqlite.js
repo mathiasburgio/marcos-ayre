@@ -178,14 +178,14 @@ const restoreBackup = async (input) => {
         if(!tablas.includes("usuarios")) throw new Error("El respaldo no corresponde a la base de datos del sistema");
         const columnasEsperadas = {
             usuarios: ["id", "nombre", "email", "contrasena", "esAdmin", "eliminado"],
-            productos: ["id", "imagen", "nombre", "precio", "costo", "stock", "visible", "eliminado"],
+            productos: ["id", "imagen", "nombre", "precio", "costo", "stock", "visible", "prioridad", "eliminado"],
             eventos: ["id", "fecha", "nombre", "mesas", "fechaInicio", "fechaFin", "activo"],
             ventas: ["id", "eventoId", "fecha", "numeroGlobal", "numeroEvento", "productos", "total", "usuarioEmail", "efectivo", "transferencia", "cajaNumero"],
             mesas: ["id", "eventoId", "numero", "nombre", "telefono", "total", "efectivo", "transferencia", "productos", "cajaNumero", "cerrada"],
             movimientosCaja: ["id", "eventoId", "fecha", "numeroGlobal", "numeroEvento", "usuarioEmail", "tipo", "detalle", "efectivo", "transferencia", "cajaNumero"],
             contadores: ["id", "clave", "valor"],
             registros: ["id", "clave", "valor"],
-            bitacora: ["id", "fecha", "usuarioEmail", "clave", "detalle"]
+            bitacora: ["id", "eventoId", "fecha", "usuarioEmail", "clave", "detalle"]
         };
         for(const [tabla, esperadas] of Object.entries(columnasEsperadas)){
             if(!tablas.includes(tabla)) throw new Error(`El respaldo no tiene la tabla ${tabla}`);

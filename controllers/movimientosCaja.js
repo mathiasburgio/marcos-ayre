@@ -49,7 +49,7 @@ function nuevo(req, res){
             `, [evento.id, fecha, numeroGlobal, numeroEvento, req.session.data.email,
                 datos.tipo, detalle, efectivo, transferencia, cajaNumero]);
             const movimiento = consultar("SELECT * FROM movimientosCaja WHERE id = ?", [insercion.insertId])[0];
-            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [fecha, req.session.data.email, `movimiento_caja_${datos.tipo}`, `Movimiento global ${numeroGlobal} del evento ${numeroEvento}, caja ${cajaNumero}: ${detalle}; efectivo $${efectivo}, transferencia $${transferencia}`]);
+            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle, eventoId) VALUES (?, ?, ?, ?, COALESCE((SELECT id FROM eventos WHERE activo = 1 AND fechaInicio != '' AND fechaFin = '' ORDER BY id DESC LIMIT 1), 0))", [fecha, req.session.data.email, `movimiento_caja_${datos.tipo}`, `Movimiento global ${numeroGlobal} del evento ${numeroEvento}, caja ${cajaNumero}: ${detalle}; efectivo $${efectivo}, transferencia $${transferencia}`]);
             return movimiento;
         });
         if(resultado.error) return res.status(409).json({error: resultado.error, eventoEnCurso: false});

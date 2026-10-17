@@ -1,81 +1,14 @@
-class PrintJob {
+class PrintJob extends PrinterJob {
     constructor({ paper = 58, printerName = null } = {}) {
-        this.job = [];
-        this.paper = paper;
-        this.size = paper === 80 ? 48 : 32;
-        this.printerName = printerName;
+        super({paper, printerName});
         this.images = new Map();
-        
     }
 
     async preloadImages(url){
         if(this.images.has(url)) return this.images.get(url);
-        let base64 = await this.imageUrlToBase64(url);
+        const base64 = await this.imageUrlToBase64(url);
         this.images.set(url, base64);
         return base64;
-    }
-
-    // =========================
-    // 🔧 HELPERS
-    // =========================
-    pad(text, length, align = "left") {
-        text = String(text ?? "");
-
-        if (text.length > length) {
-            text = length > 3
-                ? text.substring(0, length - 3) + "..."
-                : text.substring(0, length);
-        }
-
-        if (align === "right") return text.padStart(length, " ");
-        if (align === "center") {
-            let left = Math.floor((length - text.length) / 2);
-            let right = length - text.length - left;
-            return " ".repeat(left) + text + " ".repeat(right);
-        }
-
-        return text.padEnd(length, " ");
-    }
-
-    formatColumns(structure, data) {
-        return structure.map(col => {
-            return this.pad(data[col.key], col.width, col.align);
-        }).join("");
-    }
-
-    // =========================
-    // 🧾 ELEMENTOS
-    // =========================
-
-    addLine({ text = "", bold = false, align = "left" } = {}) {
-        this.job.push({
-            type: "line",
-            text,
-            bold,
-            align
-        });
-    }
-
-    addTable(items, structure) {
-        this.job.push({
-            type: "table",
-            items,
-            structure
-        });
-    }
-
-    addNewLine(lines = 1) {
-        this.job.push({
-            type: "newline",
-            lines
-        });
-    }
-
-    addSeparator(char = "-") {
-        this.job.push({
-            type: "separator",
-            char
-        });
     }
 
     addCut() {
@@ -101,6 +34,7 @@ class PrintJob {
     async imageUrlToBase64(url, intensidad = 0.05) { //intensidad 0 a 1
         try{
             const resp = await fetch(url);
+            if(!resp.ok) throw new Error("No se pudo cargar la imagen de la prueba");
             const blob = await resp.blob();
             const img = await createImageBitmap(blob);
 
@@ -151,14 +85,17 @@ class PrintJob {
             return canvas.toDataURL('image/png');
         }catch(err){
             console.error("Error descargando o procesando la imagen:", err);
+            throw err;
         }
     }
 
-    async test(versionName="mateflix") {
+    async test(versionName="VENTAS") {
+        if(localStorage.getItem("printerLocation") === "ninguna") return await this.print();
         this.addLine({ text: versionName.toUpperCase(), bold: true, align: "center" });
+        this.addLine({ text: "PÁGINA DE PRUEBA", bold: true, align: "center" });
         this.addSeparator();
 
-        this.addLine({ text: "Transacción Nº 123" });
+        this.addLine({ text: new Date().toLocaleString("es-AR") });
 
         this.addSeparator();
 
@@ -180,27 +117,12 @@ class PrintJob {
 
         this.addSeparator();
 
-        await this.preloadImages(`./resources/${versionName}-icono-256x256.png`);
-        this.addImage({path: `./resources/${versionName}-icono-256x256.png`, align: "center"});
+        await this.preloadImages("/resources/branding/ventas-icono.png");
+        this.addImage({path: "/resources/branding/ventas-icono.png", align: "center"});
         
+        this.addNewLine(3);
         this.addCut();
 
-        const resp = await this.print();
-        console.log(resp);
-    }
-
-    // =========================
-    // 🚀 ENVIAR
-    // =========================
-    async print() {
-        if (window.electronAPI) {
-            return await window.electronAPI.printJob({
-                job: this.job,
-                //paper: this.paper,
-                //printerName: this.printerName
-            });
-        } else {
-            console.warn("No está en Electron");
-        }
+        return await this.print();
     }
 }

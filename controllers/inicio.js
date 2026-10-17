@@ -3,10 +3,51 @@ const utils = require("../utils/utils");
 const info = require("../utils/info");
 const logger = require("../utils/logger");
 const { promisify } = require("util");
+const { execFile } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+
+async function validarLicencia(){
+    try{
+        const comando = `
+            $ErrorActionPreference = 'Stop'
+            [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+            $clave = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('ventas-2026')
+            try {
+                $licencia = $clave.GetValue('licencia', $null)
+                if ($null -eq $licencia) {
+                    $licencia = [Guid]::NewGuid().ToString()
+                    $clave.SetValue('licencia', $licencia, [Microsoft.Win32.RegistryValueKind]::String)
+                }
+                $creado = $clave.GetValue('creado', $null)
+                if ($null -eq $creado) {
+                    $creado = [DateTime]::Now.ToString('yyyyMMdd', [System.Globalization.CultureInfo]::InvariantCulture)
+                    $clave.SetValue('creado', $creado, [Microsoft.Win32.RegistryValueKind]::String)
+                }
+                [PSCustomObject]@{licencia = [string]$licencia; creado = [string]$creado} | ConvertTo-Json -Compress
+            } finally {
+                $clave.Dispose()
+            }
+        `;
+        const {stdout} = await promisify(execFile)("powershell.exe", [
+            "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(comando, "utf16le").toString("base64")
+        ], {encoding: "utf8", windowsHide: true, timeout: 10000});
+        const registro = JSON.parse(stdout.trim());
+        const config = JSON.parse(await fs.promises.readFile(path.join(info.documentsPath, "config.json"), "utf8"));
+        const valida = !!registro.licencia && !!registro.creado && config.licencia === registro.licencia && String(config.creado) === registro.creado;
+        if(valida) Object.assign(info.config, {licencia: config.licencia, creado: config.creado});
+        return valida;
+    }catch(err){
+        console.log(err);
+        logger.log("Error al validar la licencia: " + err.message, "error");
+    }
+    return false;
+}
 
 async function getHTML(req, res){
     try{
-        if(req.session?.data && !req.session.data.esAdmin) return res.redirect("/vender");
+        if(!req.session?.data && !await validarLicencia()) return res.status(403).type("text/plain").send("Licencia no válida");
+        if(req.session?.data && !req.session.data.esAdmin) return res.redirect("/ventas");
         let evento = null;
         let cantidadVentas = 0;
         let dominio = "";
@@ -46,6 +87,7 @@ async function getHTML(req, res){
 async function iniciarSesion(req, res){
     let sesionRenovada = false;
     try{
+        if(!await validarLicencia()) return res.status(403).json({error: "Licencia no válida"});
         const { email, contrasena } = req.body || {};
         if(typeof email !== "string" || typeof contrasena !== "string" || !contrasena)  return res.status(400).json({error: "Ingrese email y contraseña"});
         const correo = email.trim().toLowerCase();
@@ -78,7 +120,7 @@ async function iniciarSesion(req, res){
             cajaNumero: 0
         };
         await promisify(req.session.save).call(req.session);
-        await db.executeQuery("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), usuario.email, "inicio_sesion", "El usuario inició sesión"]);
+        await db.executeQuery("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle, eventoId) VALUES (?, ?, ?, ?, COALESCE((SELECT id FROM eventos WHERE activo = 1 AND fechaInicio != '' AND fechaFin = '' ORDER BY id DESC LIMIT 1), 0))", [new Date().toISOString(), usuario.email, "inicio_sesion", "El usuario inició sesión"]);
         res.status(200).json({success: true, usuario: req.session.data});
     }catch(error){
         if(sesionRenovada) delete req.session.data;
@@ -90,7 +132,7 @@ async function cerrarSesion(req, res){
         const usuarioEmail = req.session?.data?.email;
         await promisify(req.session.destroy).call(req.session);
         res.clearCookie("ventas2026.sid", {path: "/"});
-        if(usuarioEmail) await db.executeQuery("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), usuarioEmail, "cerrar_sesion", "El usuario cerró sesión"]);
+        if(usuarioEmail) await db.executeQuery("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle, eventoId) VALUES (?, ?, ?, ?, COALESCE((SELECT id FROM eventos WHERE activo = 1 AND fechaInicio != '' AND fechaFin = '' ORDER BY id DESC LIMIT 1), 0))", [new Date().toISOString(), usuarioEmail, "cerrar_sesion", "El usuario cerró sesión"]);
         if(req.method === "GET") return res.redirect("/");
         res.status(200).json({success: true});
     }catch(error){

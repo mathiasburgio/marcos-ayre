@@ -1,17 +1,18 @@
-<div id="ventas" data-evento-id="<%= evento?.id || '' %>">
+<div id="ventas" data-evento-id="<%= evento?.id || '' %>" data-vista-movil="productos">
     <% if(!evento){ %>
         <p class="alert alert-info">No hay ningún evento activo. Activá un evento para registrar ventas y mesas.</p>
     <% }else{ %>
         <div class="row">
-            <div class="col-12 col-lg-6 mb-3">
+            <div class="col-12 col-lg-6 mb-3" id="ventas-panel-productos">
                 <section class="card card-primary card-outline h-100">
-                    <div class="card-header d-flex align-items-center">
+                    <div class="card-header d-flex align-items-center flex-wrap">
                         <strong class="mr-3">Productos</strong>
-                        <button type="button" class="btn btn-primary btn-flat" id="gestionar-mesas"><i class="fas fa-chair mr-1"></i> Gestionar mesas</button>
+                        <button type="button" class="btn btn-primary btn-flat btn-sm" id="gestionar-mesas"><i class="fas fa-chair mr-1"></i> Mesas</button>
+                        <button type="button" class="btn btn-info btn-flat ml-2 btn-sm" id="buscar-ventas"><i class="fas fa-search mr-1" aria-hidden="true"></i> Ventas</button>
                     </div>
                     <div class="card-body">
                         <input type="search" class="form-control mb-3" id="buscar-producto" placeholder="Buscar producto..." aria-label="Buscar producto">
-                        <div class="border rounded" style="height: 65vh; overflow-y: auto;">
+                        <div class="border rounded" style="min-height: 50vh; max-height: 60vh;  overflow-y: auto;">
                             <table class="table table-sm table-hover mb-0" id="listado-productos-venta">
                                 <thead class="thead-dark"><tr><th>Nombre</th><th class="text-right">Precio</th><th></th></tr></thead>
                                 <tbody></tbody>
@@ -20,17 +21,17 @@
                     </div>
                 </section>
             </div>
-            <div class="col-12 col-lg-6 mb-3">
+            <div class="col-12 col-lg-6 mb-3" id="ventas-panel-ticket">
                 <section class="card card-success card-outline">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <strong>Productos que se va a llevar</strong>
+                        <strong>Listado de venta</strong>
                         <label class="mb-0 d-flex align-items-center">
                             <input type="checkbox" class="toggle mr-2" id="agrupar-iguales">
-                            Agrupar iguales
+                            Agrupar
                         </label>
                     </div>
                     <div class="card-body">
-                        <div class="border rounded" style="height: 60vh; overflow-y: auto;">
+                        <div class="border rounded" style="min-height: 40vh; max-height: 60vh; overflow-y: auto;">
                             <table class="table table-sm mb-0" id="listado-carrito">
                                 <thead class="thead-dark"><tr><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">Subtotal</th><th></th></tr></thead>
                                 <tbody><tr><td colspan="4" class="text-muted">No hay productos en el ticket</td></tr></tbody>
@@ -48,11 +49,21 @@
                 </section>
             </div>
         </div>
+        <nav class="ventas-navegacion-movil d-flex d-lg-none" aria-label="Vistas de ventas">
+            <button type="button" class="btn btn-primary btn-flat" data-vista-ventas="productos" aria-controls="ventas-panel-productos" aria-pressed="true">Productos</button>
+            <button type="button" class="btn btn-outline-primary btn-flat" data-vista-ventas="ticket" aria-controls="ventas-panel-ticket" aria-pressed="false">
+                <span class="d-block">Venta</span>
+                <strong class="d-block" id="total-ticket-movil">$ 0</strong>
+            </button>
+        </nav>
     <% } %>
 </div>
 <div id="modal-cobrar-venta" class="d-none">
     <div id="cobro-venta">
-        <p class="h5 mb-3">Total: <strong id="cobro-total"></strong></p>
+        <div class="d-flex align-items-center flex-wrap mb-3">
+            <p class="h5 mb-0 mr-3"><span id="cobro-total-label">Total</span>: <strong id="cobro-total"></strong></p>
+            <button type="button" class="btn btn-warning btn-flat d-none" data-imprimir-mesa><i class="fas fa-print mr-1" aria-hidden="true"></i> Imprimir</button>
+        </div>
         <div class="row">
             <form class="col-12 col-md-6 mb-3 mb-md-0" data-tipo-cobro="abonar" novalidate>
                 <div class="border rounded p-3 h-100 d-flex flex-column">
@@ -85,7 +96,7 @@
                     <h3 class="h5 mb-3">MESAS</h3>
                     <div class="table-responsive mb-3" style="max-height: 40vh; overflow-y: auto;">
                         <table class="table table-sm table-hover mb-0">
-                            <thead class="thead-dark"><tr><th></th><th>Nº</th><th>Nombre</th><th></th></tr></thead>
+                            <thead class="thead-dark"><tr><th>Nº</th><th>Nombre</th><th class="text-right">Saldo</th><th></th></tr></thead>
                             <tbody id="cobro-listado-mesas"><tr><td colspan="4" class="text-muted">Cargando mesas...</td></tr></tbody>
                         </table>
                     </div>

@@ -1,18 +1,22 @@
 {
   "name": "marcos-ayre",
   "version": "1.0.0",
-  "description": "",
+  "description": "Sistema de ventas y gestión de eventos",
   "main": "index.js",
   "scripts": {
     "start": "electron .",
+    "build": "electron-builder --win",
     "test": "node --test tests/*.test.js"
   },
   "keywords": [],
   "author": "Mathias Burgio",
   "license": "ISC",
   "type": "commonjs",
-  "os": [ "win32" ],
+  "os": [
+    "win32"
+  ],
   "dependencies": {
+    "@vscode/sudo-prompt": "^9.3.2",
     "archiver": "^8.0.0",
     "axios": "^1.20.0",
     "bcryptjs": "^3.0.3",
@@ -25,10 +29,35 @@
     "multer": "^2.4.0",
     "mysql2": "^3.24.5",
     "node-cron": "^4.6.0",
+    "node-thermal-printer": "^4.6.1",
     "session-file-store": "^1.5.0",
     "socket.io": "^4.8.4"
   },
   "devDependencies": {
-    "electron": "^44.7.1"
+    "electron": "^44.7.1",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "ventas-2026",
+    "productName": "Ventas",
+    "electronDist": "node_modules/electron/dist",
+    "asar": true,
+    "files": [
+      "index.js",
+      "express.js",
+      "preload.js",
+      "controllers/**/*",
+      "routes/**/*",
+      "utils/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "./public/resources/branding/ventas.ico",
+      "artifactName": "${productName}-${version}-Setup.${ext}"
+    }
   }
 }

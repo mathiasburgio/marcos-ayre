@@ -258,3 +258,39 @@ table .iselector{
     top: 0;
     z-index: 1;
 }
+
+@media (max-width: 991.98px) {
+    #ventas[data-evento-id]:not([data-evento-id=""]) {
+        padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    #ventas[data-vista-movil="productos"] #ventas-panel-ticket,
+    #ventas[data-vista-movil="ticket"] #ventas-panel-productos {
+        display: none;
+    }
+
+    #ventas .ventas-navegacion-movil {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 1030;
+        gap: .5rem;
+        padding: .5rem;
+        padding-bottom: calc(.5rem + env(safe-area-inset-bottom, 0px));
+        background-color: #fff;
+        border-top: 1px solid #dee2e6;
+        box-shadow: 0 -2px 8px rgba(0, 0, 0, .15);
+    }
+
+    #ventas .ventas-navegacion-movil button {
+        flex: 1;
+        min-width: 0;
+        min-height: 3.5rem;
+    }
+
+    .dark-mode #ventas .ventas-navegacion-movil {
+        background-color: #343a40;
+        border-color: #6c757d;
+    }
+}

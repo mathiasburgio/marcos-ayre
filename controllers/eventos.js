@@ -3,7 +3,6 @@ const logger = require("../utils/logger");
 const fs = require("fs");
 const path = require("path");
 const info = require("../utils/info");
-const {sumar} = require("../utils/validaciones");
 
 async function getHTML(req, res){
     try{
@@ -104,7 +103,7 @@ async function nuevo(req, res){
                 return {status: 409, error: "Cierre el evento activo antes de agregar otro"};
             }
             const insercion = consultar("INSERT INTO eventos (fecha, nombre, mesas, fechaInicio, fechaFin, activo) VALUES (?, ?, ?, '', '', 0)", [fecha, nombre, mesas]);
-            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), req.session.data.email, "nuevo_evento", `Se creó el evento ${nombre} (ID ${insercion.insertId}) con ${mesas} mesas`]);
+            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle, eventoId) VALUES (?, ?, ?, ?, COALESCE((SELECT id FROM eventos WHERE activo = 1 AND fechaInicio != '' AND fechaFin = '' ORDER BY id DESC LIMIT 1), 0))", [new Date().toISOString(), req.session.data.email, "nuevo_evento", `Se creó el evento ${nombre} (ID ${insercion.insertId}) con ${mesas} mesas`]);
             return consultar("SELECT * FROM eventos WHERE id = ?", [insercion.insertId])[0];
         });
         if(resultado.error) return res.status(resultado.status).json({error: resultado.error});
@@ -134,7 +133,7 @@ function modificar(req, res){
             if(!eventos.length) return {status: 404, error: "Evento no encontrado"};
             if(eventos[0].activo) return {status: 409, error: "No se puede modificar un evento activo"};
             consultar("UPDATE eventos SET fecha = ?, nombre = ?, mesas = ? WHERE id = ?", [fecha, nombre, mesas, eventoId]);
-            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), req.session.data.email, "modificar_evento", `Se modificó el evento ${nombre} (ID ${eventoId}) con fecha ${fecha} y ${mesas} mesas`]);
+            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle, eventoId) VALUES (?, ?, ?, ?, COALESCE((SELECT id FROM eventos WHERE activo = 1 AND fechaInicio != '' AND fechaFin = '' ORDER BY id DESC LIMIT 1), 0))", [new Date().toISOString(), req.session.data.email, "modificar_evento", `Se modificó el evento ${nombre} (ID ${eventoId}) con fecha ${fecha} y ${mesas} mesas`]);
             return consultar("SELECT * FROM eventos WHERE id = ?", [eventoId])[0];
         });
         if(resultado.error) return res.status(resultado.status).json({error: resultado.error});
@@ -158,7 +157,7 @@ function activar(req, res){
             if(activos.some(evento => Number(evento.id) !== eventoId)) return {status: 409, error: "Cierre el evento activo antes de activar otro"};
             const iniciarEvento = Number(eventos[0].activo) !== 1 || !eventos[0].fechaInicio;
             consultar("UPDATE eventos SET activo = 1, fechaInicio = CASE WHEN fechaInicio = '' THEN ? ELSE fechaInicio END, fechaFin = '' WHERE id = ?", [ahora, eventoId]);
-            if(iniciarEvento) consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [ahora, req.session.data.email, "iniciar_evento", `Se inició el evento ${eventos[0].nombre} (ID ${eventoId})`]);
+            if(iniciarEvento) consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle, eventoId) VALUES (?, ?, ?, ?, COALESCE((SELECT id FROM eventos WHERE activo = 1 AND fechaInicio != '' AND fechaFin = '' ORDER BY id DESC LIMIT 1), 0))", [ahora, req.session.data.email, "iniciar_evento", `Se inició el evento ${eventos[0].nombre} (ID ${eventoId})`]);
             return consultar("SELECT * FROM eventos WHERE id = ?", [eventoId])[0];
         });
         if(resultado.error) return res.status(resultado.status).json({error: resultado.error});
@@ -182,31 +181,8 @@ async function cerrar(req, res){
                 return {status: 409, error: `No se puede cerrar el evento: quedan ${mesasPendientes} ${mesasPendientes === 1 ? "mesa pendiente" : "mesas pendientes"} de cobro`};
             }
             const fechaFin = new Date().toISOString();
-            const ventas = consultar("SELECT cajaNumero, efectivo, transferencia FROM ventas WHERE eventoId = ?", [eventoId]);
-            const mesas = consultar("SELECT cajaNumero, efectivo, transferencia FROM mesas WHERE eventoId = ?", [eventoId]);
-            for(const cajaNumero of [1, 2, 3, 4]){
-                for(const [detalle, registros, medio] of [
-                    ["Ventas directas efectivo", ventas, "efectivo"],
-                    ["Ventas directas transferencia", ventas, "transferencia"],
-                    ["Ventas mesas efectivo", mesas, "efectivo"],
-                    ["Ventas mesas transferencia", mesas, "transferencia"]
-                ]){
-                    const pagos = registros.filter(registro => registro.cajaNumero === cajaNumero && registro[medio] > 0);
-                    const importe = pagos.reduce((total, registro) => sumar(total, registro[medio]), 0);
-                    const efectivo = medio === "efectivo" ? importe : 0;
-                    const transferencia = medio === "transferencia" ? importe : 0;
-                    const detalleMovimiento = `${detalle} (cantidad ${pagos.length})`;
-                    const numeroGlobal = db.setContador("numeroGlobal", "incr", consultar);
-                    const numeroEvento = db.setContador(`movimientosCaja_numeroEvento_${eventoId}`, "incr", consultar);
-                    consultar(`
-                        INSERT INTO movimientosCaja (eventoId, fecha, numeroGlobal, numeroEvento, usuarioEmail, tipo, detalle, efectivo, transferencia, cajaNumero)
-                        VALUES (?, ?, ?, ?, ?, 'ingreso', ?, ?, ?, ?)
-                    `, [eventoId, fechaFin, numeroGlobal, numeroEvento, req.session.data.email, detalleMovimiento, efectivo, transferencia, cajaNumero]);
-                    consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [fechaFin, req.session.data.email, "movimiento_caja_ingreso", `Movimiento global ${numeroGlobal} del evento ${numeroEvento}, caja ${cajaNumero}: ${detalleMovimiento}; efectivo $${efectivo}, transferencia $${transferencia}`]);
-                }
-            }
+            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle, eventoId) VALUES (?, ?, ?, ?, COALESCE((SELECT id FROM eventos WHERE activo = 1 AND fechaInicio != '' AND fechaFin = '' ORDER BY id DESC LIMIT 1), 0))", [fechaFin, req.session.data.email, "cerrar_evento", `Se cerró el evento ${eventos[0].nombre} (ID ${eventoId})`]);
             consultar("UPDATE eventos SET activo = 0, fechaFin = ? WHERE id = ?", [fechaFin, eventoId]);
-            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [fechaFin, req.session.data.email, "cerrar_evento", `Se cerró el evento ${eventos[0].nombre} (ID ${eventoId})`]);
             return consultar("SELECT * FROM eventos WHERE id = ?", [eventoId])[0];
         });
         if(resultado.error) return res.status(resultado.status).json({error: resultado.error});

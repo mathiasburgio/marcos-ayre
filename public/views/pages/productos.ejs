@@ -82,6 +82,14 @@
                         </div>
                     </div>
                     <div class="form-group">
+                        <label for="prioridad">Prioridad</label>
+                        <select id="prioridad" class="form-control" required>
+                            <% for(let prioridad = 1; prioridad <= 10; prioridad++){ %>
+                                <option value="<%= prioridad %>"<%= prioridad === 5 ? ' selected' : '' %>><%= prioridad %><%= prioridad === 1 ? ' - Alta' : prioridad === 5 ? ' - Media' : prioridad === 10 ? ' - Baja' : '' %></option>
+                            <% } %>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="visible" class="mb-0 cp">
                             <input type="checkbox" id="visible" class="toggle" checked>
                             Visible en ventas

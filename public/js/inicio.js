@@ -13,6 +13,24 @@ class Inicio{
         $("#restaurar-base-datos").on("click", () => this.restaurarBaseDatos());
         await boilerplate(false);
         $("#configurar-impresora").on("click", () => menu.modalPreferencias());
+        $("[data-mostrar-qr]").on("click", async ev => {
+            const direccion = $(ev.currentTarget).attr("data-mostrar-qr");
+            const botones = $("[data-mostrar-qr]").prop("disabled", true);
+            try{
+                const qr = await utils.getQR({text: direccion, size: 224});
+                const contenido = $("<div>").addClass("text-center").append(
+                    $("<div>").addClass("d-inline-block bg-white p-3 rounded").append(qr.img.attr("alt", "QR para conectarse al servidor").addClass("img-fluid")),
+                    $("<p>").addClass("text-break mt-3 mb-2").text(direccion),
+                    $("<p>").addClass("text-muted small mb-0").text("Escaneá el QR desde un dispositivo conectado a la misma red Wi-Fi que la PC servidor.")
+                );
+                modal.show({title: "Conectar otro dispositivo", body: contenido.html(), buttons: "close"});
+            }catch(err){
+                console.log(err);
+                menu.toast({level: "danger", title: "Código QR", message: "No se pudo generar el código QR"});
+            }finally{
+                botones.prop("disabled", false);
+            }
+        });
         menu.hideCortina();
     }
     async iniciarSesion(){
@@ -26,9 +44,9 @@ class Inicio{
             const resp = await $.post({
                 url: "/inicio/iniciar-sesion",
                 data: {email, contrasena},
-                timeout: 1_000
+                timeout: 15_000
             });
-            if(resp.success) window.location.href = resp.usuario?.esAdmin ? "/inicio" : "/vender";
+            if(resp.success) window.location.href = resp.usuario?.esAdmin ? "/inicio" : "/ventas";
         }catch(err){
             modal.hide(false, ()=>{
                 console.log(err.responseJSON || err.statusText);

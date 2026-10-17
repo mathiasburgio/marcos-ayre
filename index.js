@@ -2,7 +2,6 @@ const { app, BrowserWindow, ipcMain, globalShortcut, shell, dialog } = require('
 const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
-const db = require("./utils/sqlite");
 const logger = require("./utils/logger.js");
 const { exec } = require("child_process");
 const cron = require("node-cron");
@@ -13,6 +12,32 @@ let config = null;
 
 let win;
 let servidorHTTP = null;
+function verificarOrigen(evento){
+    if(!win || evento.sender !== win.webContents || evento.senderFrame !== win.webContents.mainFrame ||
+        new URL(evento.senderFrame.url).origin !== new URL(info.modoServidor.url).origin){
+        throw new Error("Acción local no autorizada");
+    }
+}
+
+ipcMain.handle("entorno-local", evento => {
+    verificarOrigen(evento);
+    return {cliente: !info.modoServidor.esServidor};
+});
+ipcMain.handle("imprimir-local", async (evento, trabajo) => {
+    verificarOrigen(evento);
+    return await require("./controllers/impresion").imprimirLocal(trabajo);
+});
+ipcMain.handle("configurar-impresora-local", async evento => {
+    verificarOrigen(evento);
+    return await require("./controllers/impresion").instalarLocal();
+});
+ipcMain.handle("abrir-navegador-local", async (evento, direccion) => {
+    verificarOrigen(evento);
+    const url = new URL(direccion);
+    if(!["http:", "https:"].includes(url.protocol)) throw new Error("Solo se permiten enlaces HTTP o HTTPS");
+    await shell.openExternal(url.href);
+});
+
 async function createWindow() {
     try{
         win = new BrowserWindow({
@@ -42,18 +67,20 @@ async function createWindow() {
         });
 
         //conecto a la base de datos
-        await db.connect(config.db);
+        if(info.modoServidor.esServidor) await require("./utils/sqlite").connect(config.db);
 
         //inicio el servidor HTTP
         if(!servidorHTTP){
             const servidor = require("./express");
             servidorHTTP = servidor.listen(config.port, "0.0.0.0");
             await once(servidorHTTP, "listening");
-            logger.log(`Servidor Express iniciado en http://127.0.0.1:${config.port}/`);
+            logger.log(info.modoServidor.esServidor
+                ? `Servidor Express iniciado en http://127.0.0.1:${config.port}/ y disponible en la red en http://${info.ip}:${config.port}/`
+                : `Receptor de impresión iniciado en el puerto ${config.port}. Sistema central: ${info.modoServidor.url}`);
         }
 
         //cargo pantalla inicial
-        await win.loadURL(`http://127.0.0.1:${config.port}/`);
+        await win.loadURL(info.modoServidor.url);
 
 
     }catch(e){

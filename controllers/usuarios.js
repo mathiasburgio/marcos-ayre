@@ -39,7 +39,7 @@ async function nuevo(req, res){
         const contrasenaHash = await getPasswordHash(contrasena);
         const usuario = db.transaction(consultar => {
             const resultado = consultar("INSERT INTO usuarios (nombre, email, contrasena, eliminado, esAdmin) VALUES (?, ?, ?, 0, ?)", [nombre, email, contrasenaHash, esAdmin]);
-            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), req.session.data.email, "nuevo_usuario", `Se creó el usuario ${email} (ID ${resultado.insertId})`]);
+            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle, eventoId) VALUES (?, ?, ?, ?, COALESCE((SELECT id FROM eventos WHERE activo = 1 AND fechaInicio != '' AND fechaFin = '' ORDER BY id DESC LIMIT 1), 0))", [new Date().toISOString(), req.session.data.email, "nuevo_usuario", `Se creó el usuario ${email} (ID ${resultado.insertId})`]);
             return {id: resultado.insertId, nombre, email, esAdmin};
         });
         res.status(201).json(usuario);
@@ -71,7 +71,7 @@ async function modificar(req, res){
             }else{
                 consultar("UPDATE usuarios SET nombre = ?, email = ?, esAdmin = ? WHERE id = ?", [nombre || usuarios[0].nombre, email, esAdmin, usuarioId]);
             }
-            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), req.session.data.email, "modificar_usuario", `Se modificó el usuario ${usuarioId} (${email})`]);
+            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle, eventoId) VALUES (?, ?, ?, ?, COALESCE((SELECT id FROM eventos WHERE activo = 1 AND fechaInicio != '' AND fechaFin = '' ORDER BY id DESC LIMIT 1), 0))", [new Date().toISOString(), req.session.data.email, "modificar_usuario", `Se modificó el usuario ${usuarioId} (${email})`]);
             return {...usuarios[0], nombre: nombre || usuarios[0].nombre, email, esAdmin};
         });
         if(usuario.error) return res.status(usuario.status).json({error: usuario.error});
@@ -94,7 +94,7 @@ async function eliminar(req, res){
                 return {status: 409, error: "No se puede eliminar el último administrador"};
             }
             consultar("UPDATE usuarios SET eliminado = 1 WHERE id = ?", [usuarioId]);
-            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), actorEmail, "eliminar_usuario", `Se eliminó el usuario ${usuarioId} (${usuarios[0].email})`]);
+            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle, eventoId) VALUES (?, ?, ?, ?, COALESCE((SELECT id FROM eventos WHERE activo = 1 AND fechaInicio != '' AND fechaFin = '' ORDER BY id DESC LIMIT 1), 0))", [new Date().toISOString(), actorEmail, "eliminar_usuario", `Se eliminó el usuario ${usuarioId} (${usuarios[0].email})`]);
         });
         if(resultado?.error) return res.status(resultado.status).json({error: resultado.error});
         if(usuarioId === Number(req.session.data.id)) delete req.session.data;

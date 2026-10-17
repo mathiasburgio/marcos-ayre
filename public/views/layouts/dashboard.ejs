@@ -156,7 +156,7 @@
             <!-- Content Wrapper. Contains page content -->
             <div class="content-wrapper overflow-hidden">
                 <!-- Content Header (Page header) -->
-                <section class="content-header mb-3">
+                <section class="content-header mb-1 d-none">
                     <div class="container-fluid d-none">
                         <div class="row mb-2">
                             <div class="col-auto">
@@ -174,7 +174,7 @@
             
                 <!-- Main content -->
                 <section class="content d-none" style="opacity: 0;">
-                    <div class="container-fluid pb-5">
+                    <div class="container-fluid py-3">
                         <%- include(page); %>
                     </div>
                 </section>
@@ -184,9 +184,12 @@
             
             <footer class="main-footer">
                 <div class="float-right d-none d-sm-block">
-                    <b>Versión</b> Rural - 1.0.0
+                    <b>Versión</b> Baguales - 1.0.0
                 </div>
-                Creado por <span class="font-weight-bold" onclick="menu.abrirVentana('https://instagram.com/mathias.burgio')">Mathias Burgio</span>.
+                <span id="creado-por" class="d-inline-block" tabindex="0">Creado por <button type="button" id="ver-creador" class="btn btn-link text-reset font-weight-bold p-0 border-0 align-baseline">Mathias Burgio</button>.</span>
+                <div id="popover-creado-por" class="d-none">
+                    <%- include('../partials/contacto-mathias'); %>
+                </div>
             </footer>
             
           
@@ -274,14 +277,53 @@
 
                 <div class="list-group-item px-0">
                     <label class="font-weight-bold mb-1">Impresora</label>
-                    <select name="preferencia-impresora" class="form-control">
-                        <option value="local">Local</option>
-                        <option value="servidor">Servidor</option>
-                    </select>
+                    <div class="d-flex align-items-center">
+                        <select name="preferencia-impresora" class="form-control">
+                            <option value="local">Local</option>
+                            <option value="servidor">Servidor</option>
+                            <option value="ip">Asignar IP</option>
+                            <option value="rawbt">RawBT</option>
+                            <option value="ninguna">Sin impresora</option>
+                        </select>
+                        <button type="button" name="instalar-impresora-termica" data-instalar-en-servidor="<%= !!(usuario?.esAdmin && usuario?.esServidor) %>" class="btn btn-primary btn-flat ml-2 text-nowrap<%= usuario?.esAdmin && usuario?.esServidor ? '' : ' d-none' %>"><i class="fas fa-print mr-1" aria-hidden="true"></i> Instalar impresora</button>
+                    </div>
+                    <small class="d-block text-muted mt-1">Local: impresora de esta PC. Servidor: impresora de la PC servidor. Asignar IP: impresora de otra PC de la red. RawBT: impresora Bluetooth de este dispositivo Android. Sin impresora: no se envían trabajos de impresión.</small>
+                    <div class="mt-2 d-none" data-preferencia-impresora-ip>
+                        <label class="mb-1" for="preferencia-impresora-ip">IP de la PC con impresora</label>
+                        <input type="text" id="preferencia-impresora-ip" name="preferencia-impresora-ip" class="form-control" inputmode="decimal" placeholder="192.168.1.50" maxlength="15" autocomplete="off" aria-describedby="ayuda-impresora-ip error-impresora-ip">
+                        <div class="invalid-feedback" id="error-impresora-ip">Ingrese una dirección IPv4 válida, por ejemplo 192.168.1.50.</div>
+                        <small class="d-block text-muted mt-1" id="ayuda-impresora-ip">En la PC de destino, mantenga el programa abierto, con servidor configurado con la IP central y la térmica instalada. Ambas PC deben estar en la misma red.</small>
+                    </div>
+                    <button type="button" name="probar-impresora" class="btn btn-outline-primary btn-flat mt-2"><i class="fas fa-print mr-1" aria-hidden="true"></i> Probar impresión</button>
+                    <div class="alert alert-info mt-2 mb-0 d-none" data-preferencia-impresora-rawbt>
+                        En este dispositivo Android, instalá RawBT y seleccioná allí tu impresora Bluetooth. Al imprimir, el ticket se envía directamente a RawBT. La conexión y el estado de la impresora se gestionan desde esa app.
+                    </div>
                 </div>
             </div>
         </div>
         <!-- ./modalPreferencias -->
+
+        <div id="modal-instalar-impresora" class="d-none">
+            <div style="max-height: 60vh; overflow-y: auto;">
+                <h2 class="h5 mb-3">Explicación / tutorial</h2>
+                <ol start="0" class="pl-4 mb-0">
+                    <li class="mb-3">Enchufá la impresora, verificá que tenga papel, conectala por USB a esta PC y encendela.</li>
+                    <li class="mb-3">En <strong>Impresoras y escáneres</strong> de Windows, hacé clic en <strong>Agregar una impresora o un escáner</strong>.</li>
+                    <li class="mb-3">Hacé clic en <strong>Agregar un nuevo dispositivo manualmente</strong>.</li>
+                    <li class="mb-3">Seleccioná <strong>Agregar una impresora local o de red con configuración manual</strong> y hacé clic en <strong>Siguiente</strong>.</li>
+                    <li class="mb-3">
+                        Seleccioná <strong>Usar un puerto existente</strong>. En el desplegable, elegí el puerto USB al que está conectada la impresora y hacé clic en <strong>Siguiente</strong>.
+                        <small class="d-block text-muted mt-1"><strong>Nota:</strong> podés verificar el puerto de la impresora desde el <strong>Administrador de dispositivos</strong>.</small>
+                    </li>
+                    <li class="mb-3">En Fabricante, seleccioná <strong>Generic</strong>. En Impresoras, elegí <strong>Generic / Text Only</strong> y hacé clic en <strong>Siguiente</strong>.</li>
+                    <li class="mb-3">Seleccioná <strong>Reemplazar el controlador actual</strong> y hacé clic en <strong>Siguiente</strong>.</li>
+                    <li class="mb-3"><strong>IMPORTANTE:</strong> cambiá el nombre de la impresora a <strong>termica</strong>, sin tilde, y hacé clic en <strong>Siguiente</strong>.</li>
+                    <li class="mb-3">Seleccioná <strong>No compartir esta impresora</strong> y hacé clic en <strong>Siguiente</strong>.</li>
+                    <li class="mb-3">Hacé clic en <strong>Imprimir una página de prueba</strong>. Si todo salió bien, debería salir una impresión.</li>
+                    <li>Volvé a este programa y hacé clic en <strong>Configurar impresora</strong>. Al terminar la configuración se enviará automáticamente una página de prueba. Podés repetirla con el botón <strong>Test</strong>.</li>
+                </ol>
+            </div>
+        </div>
 
         <%- include('./scripts'); %>
         <%- script ? "<script>"+ include(script)+ "</script>" : '' %>

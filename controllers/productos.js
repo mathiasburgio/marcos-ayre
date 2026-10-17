@@ -1,6 +1,12 @@
 const db = require("../utils/sqlite");
 const logger = require("../utils/logger");
-const {entero} = require("../utils/validaciones");
+const {entero, error} = require("../utils/validaciones");
+
+function validarPrioridad(valor=5){
+    const prioridad = entero(valor, "Prioridad");
+    if(prioridad < 1 || prioridad > 10) throw error("La prioridad debe estar entre 1 (alta) y 10 (baja)");
+    return prioridad;
+}
 
 async function getHTML(req, res){
     try{
@@ -16,6 +22,7 @@ async function getHTML(req, res){
 async function nuevo(req, res){
     try{
         const datos = req.body || {};
+        const prioridad = validarPrioridad(datos.prioridad);
         const nombre = typeof datos.nombre === "string" ? datos.nombre.trim() : "";
         if(!nombre || nombre.length > 200) return res.status(400).json({error: "El nombre es obligatorio y debe tener hasta 200 caracteres"});
         if(![0, 1, "0", "1"].includes(datos.visible)) return res.status(400).json({error: "Indique si el producto está visible en ventas"});
@@ -36,14 +43,15 @@ async function nuevo(req, res){
             if(eventoEnCurso && Number(datos.stock || 0) !== 0){
                 return {status: 409, error: "No se puede modificar el stock mientras hay un evento en curso", stockBloqueado: true};
             }
-            const insercion = consultar("INSERT INTO productos (nombre, costo, precio, stock, visible) VALUES (?, ?, ?, ?, ?)", [nombre, Number(datos.costo), Number(datos.precio), eventoEnCurso ? 0 : Number(datos.stock || 0), Number(datos.visible)]);
+            const insercion = consultar("INSERT INTO productos (nombre, costo, precio, stock, visible, prioridad) VALUES (?, ?, ?, ?, ?, ?)", [nombre, Number(datos.costo), Number(datos.precio), eventoEnCurso ? 0 : Number(datos.stock || 0), Number(datos.visible), prioridad]);
             const producto = consultar("SELECT * FROM productos WHERE id = ?", [insercion.insertId])[0];
-            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), req.session.data.email, "nuevo_producto", `Se creó el producto ${producto.nombre} (ID ${producto.id}); costo $${producto.costo}, precio $${producto.precio}, stock ${producto.stock}, visible en ventas: ${producto.visible ? "sí" : "no"}`]);
+            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle, eventoId) VALUES (?, ?, ?, ?, COALESCE((SELECT id FROM eventos WHERE activo = 1 AND fechaInicio != '' AND fechaFin = '' ORDER BY id DESC LIMIT 1), 0))", [new Date().toISOString(), req.session.data.email, "nuevo_producto", `Se creó el producto ${producto.nombre} (ID ${producto.id}); costo $${producto.costo}, precio $${producto.precio}, stock ${producto.stock}, visible en ventas: ${producto.visible ? "sí" : "no"}, prioridad ${producto.prioridad}`]);
             return producto;
         });
         if(resultado.error) return res.status(resultado.status).json({error: resultado.error, stockBloqueado: resultado.stockBloqueado});
         res.status(201).json(resultado);
     }catch(err){
+        if(err.status) return res.status(err.status).json({error: err.message});
         console.log(err);
         logger.log("Error en productos: " + err.message, "error");
     }
@@ -52,6 +60,7 @@ async function nuevo(req, res){
 async function modificar(req, res){
     try{
         const datos = req.body || {};
+        const prioridad = datos.prioridad === undefined ? undefined : validarPrioridad(datos.prioridad);
         const productoId = Number(datos.productoId);
         if(!Number.isSafeInteger(productoId) || productoId <= 0) return res.status(400).json({error: "Producto no válido"});
         const nombre = typeof datos.nombre === "string" ? datos.nombre.trim() : "";
@@ -76,17 +85,18 @@ async function modificar(req, res){
             if(eventoEnCurso && datos.stock !== undefined){
                 return {status: 409, error: "No se puede modificar el stock mientras hay un evento en curso", stockBloqueado: true};
             }
-            consultar("UPDATE productos SET nombre = ?, costo = ?, precio = ?, visible = ? WHERE id = ?", [nombre, Number(datos.costo), Number(datos.precio), Number(datos.visible), productoId]);
+            consultar("UPDATE productos SET nombre = ?, costo = ?, precio = ?, visible = ?, prioridad = ? WHERE id = ?", [nombre, Number(datos.costo), Number(datos.precio), Number(datos.visible), prioridad === undefined ? productos[0].prioridad : prioridad, productoId]);
             if(datos.stock !== undefined){
                 consultar("UPDATE productos SET stock = ? WHERE id = ?", [Number(datos.stock), productoId]);
             }
             const producto = consultar("SELECT * FROM productos WHERE id = ?", [productoId])[0];
-            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), req.session.data.email, "modificar_producto", `Se modificó el producto ${producto.nombre} (ID ${producto.id}); costo $${producto.costo}, precio $${producto.precio}, stock ${productos[0].stock} → ${producto.stock}, visible en ventas: ${productos[0].visible ? "sí" : "no"} → ${producto.visible ? "sí" : "no"}`]);
+            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle, eventoId) VALUES (?, ?, ?, ?, COALESCE((SELECT id FROM eventos WHERE activo = 1 AND fechaInicio != '' AND fechaFin = '' ORDER BY id DESC LIMIT 1), 0))", [new Date().toISOString(), req.session.data.email, "modificar_producto", `Se modificó el producto ${producto.nombre} (ID ${producto.id}); costo $${producto.costo}, precio $${producto.precio}, stock ${productos[0].stock} → ${producto.stock}, visible en ventas: ${productos[0].visible ? "sí" : "no"} → ${producto.visible ? "sí" : "no"}, prioridad ${productos[0].prioridad} → ${producto.prioridad}`]);
             return producto;
         });
         if(resultado.error) return res.status(resultado.status).json({error: resultado.error, stockBloqueado: resultado.stockBloqueado});
         res.status(200).json(resultado);
     }catch(err){
+        if(err.status) return res.status(err.status).json({error: err.message});
         console.log(err);
         logger.log("Error en productos: " + err.message, "error");
     }
@@ -100,7 +110,7 @@ async function eliminar(req, res){
             const productos = consultar("SELECT id, nombre, stock FROM productos WHERE id = ? AND eliminado = 0", [productoId]);
             if(!productos.length) return null;
             consultar("UPDATE productos SET eliminado = 1 WHERE id = ?", [productoId]);
-            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle) VALUES (?, ?, ?, ?)", [new Date().toISOString(), req.session.data.email, "eliminar_producto", `Se eliminó el producto ${productos[0].nombre} (ID ${productoId}); stock ${productos[0].stock}`]);
+            consultar("INSERT INTO bitacora (fecha, usuarioEmail, clave, detalle, eventoId) VALUES (?, ?, ?, ?, COALESCE((SELECT id FROM eventos WHERE activo = 1 AND fechaInicio != '' AND fechaFin = '' ORDER BY id DESC LIMIT 1), 0))", [new Date().toISOString(), req.session.data.email, "eliminar_producto", `Se eliminó el producto ${productos[0].nombre} (ID ${productoId}); stock ${productos[0].stock}`]);
             return productos[0];
         });
         if(!producto) return res.status(404).json({error: "Producto no encontrado"});
